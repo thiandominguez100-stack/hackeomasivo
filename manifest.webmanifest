@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "NEXUS Global Cyber Threat Observatory",
+  "name": "NEXUS — Evidence & Incident Intelligence",
   "short_name": "NEXUS",
-  "description": "Observatorio defensivo con telemetría DShield, CISA KEV y ocho canales de CERT y organismos oficiales.",
+  "description": "Observatorio defensivo con telemetría de sensores agregada, avisos oficiales y registro curado de incidentes documentados.",
   "lang": "es-AR",
   "start_url": "./",
   "scope": "./",
