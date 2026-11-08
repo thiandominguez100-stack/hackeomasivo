@@ -246,11 +246,20 @@
 
     const reports = feeds.reports || {};
     const reportStates = reports.sourceStates || {};
-    const sansStatus = (reportStates.sansDiary || {}).status || "pending";
-    const cisaStatus = (reportStates.cisaAdvisories || {}).status || "pending";
-    const reportInfo = "SANS: " + sansStatus.toUpperCase() + " · CISA: " + cisaStatus.toUpperCase() +
-      " · " + ((reports.items || []).length) + " publicaciones";
-    setFeedState("reportsState", "reportsInfo", reports.status, reportInfo, reports.lastSuccessfulAt);
+    const reportItems = Array.isArray(reports.items) ? reports.items : [];
+    const hasSansItems = reportItems.some((item) => item.sourceKey === "sansDiary");
+    const hasCisaItems = reportItems.some((item) => item.sourceKey === "cisaAdvisories");
+    const rawSansStatus = (reportStates.sansDiary || {}).status || "pending";
+    const rawCisaStatus = (reportStates.cisaAdvisories || {}).status || "pending";
+    const sansStatus = rawSansStatus === "ok" ? "ACTIVA" :
+      rawSansStatus === "stale" || hasSansItems ? "ANTERIOR" : "SIN DATOS";
+    const cisaStatus = rawCisaStatus === "ok" ? "ACTIVA" :
+      rawCisaStatus === "stale" || hasCisaItems ? "ANTERIOR" : "SIN DATOS";
+    const reportsStatus = reports.status === "ok" && reportItems.length ? "ok" :
+      (reports.status === "stale" || reportItems.length ? "stale" : reports.status || "pending");
+    const reportInfo = "SANS: " + sansStatus + " · CISA: " + cisaStatus +
+      " · " + reportItems.length + " publicaciones";
+    setFeedState("reportsState", "reportsInfo", reportsStatus, reportInfo, reports.lastSuccessfulAt);
 
     const successful = [dshield, cisa, reports].filter((feed) => feed.status === "ok");
     const stale = [dshield, cisa, reports].filter((feed) => feed.status === "stale");
