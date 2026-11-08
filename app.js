@@ -244,8 +244,8 @@
       const labels = { ok: "ACTIVA", stale: "ANTERIOR", error: "SIN DATOS", pending: "PENDIENTE" };
       const cssStatus = status === "ok" ? "ok" : status === "stale" ? "stale" :
         status === "error" ? "error" : "pending";
-      addText(row, "span", "feed-state " + cssStatus, labels[status] || "PENDIENTE");
       row.appendChild(content);
+      addText(row, "span", "feed-state " + cssStatus, labels[status] || "PENDIENTE");
       container.appendChild(row);
     });
   }
