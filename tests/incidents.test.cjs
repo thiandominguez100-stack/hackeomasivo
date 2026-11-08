@@ -64,9 +64,9 @@ test("normalizeIncidents rejects wrong schema, removes invalid rows, and sorts n
 test("filterIncidents searches case- and accent-insensitively", () => {
   const rows = [
     baseIncident,
-    { ...baseIncident, id: "US-KS-ELLIS-2026", title: "Ransomware en Ellis County", region: "Kansas", disclosedAt: "2026-09-18", category: "ransomware" }
+    { ...baseIncident, id: "US-KS-ELLIS-2026", title: "Ransomware en Ellis County", region: "Kansas", sourceName: "KWCH News", disclosedAt: "2026-09-18", category: "ransomware" }
   ];
-  assert.equal(filterIncidents(rows, { query: "NEBRASKA" }).length, 1);
+  assert.equal(filterIncidents(rows, { query: "NÉBRASKA" }).length, 1);
   assert.equal(filterIncidents(rows, { query: "ciberseguridad" }).length, 1);
 });
 
