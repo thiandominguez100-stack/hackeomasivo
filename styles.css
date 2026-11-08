@@ -20,3 +20,6 @@
 .maplibregl-popup-content{background:#0b1a27!important;border:1px solid #315064!important;border-radius:9px!important;box-shadow:0 10px 35px #0009!important;padding:12px!important}
 .maplibregl-popup-tip{border-top-color:#0b1a27!important;border-bottom-color:#0b1a27!important}
 .maplibregl-popup-close-button{color:#c4d9e5!important;font-size:18px!important}
+
+.building-toggle-head{margin-left:auto;padding:7px 10px;border:1px solid #315064;border-radius:8px;background:#0b1a27;color:#b9d1df;white-space:nowrap;position:relative;z-index:2}
+.building-toggle-head input{accent-color:var(--cyan)}
