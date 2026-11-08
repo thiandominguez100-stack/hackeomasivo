@@ -138,3 +138,26 @@ footer a{color:#7cabb9}
 .report-kind{margin:8px 0 0;color:#7894a5;font-size:8px}
 .reports-mark{background:#193346;color:#8ad8e6}
 @media(max-width:620px){.report-grid{grid-template-columns:1fr}}
+
+.source-divider-label{margin:4px 0 0;padding-top:10px;border-top:1px solid #20394b;color:#7993a4;font:8px 'DM Mono';letter-spacing:.8px}
+.report-sources-health{display:grid;gap:2px;max-height:355px;overflow:auto;padding-right:2px}
+.report-health-row{grid-template-columns:27px minmax(0,1fr) auto;gap:8px;padding:7px 0}
+.report-health-row .source-mark{width:25px;height:25px;font-size:10px}
+.report-health-row b{font-size:9px}
+.report-health-row small{font-size:8px}
+.report-health-row .feed-state{font-size:7px;padding:4px 5px}
+.report-sources-health .report-health-row:last-child{border-bottom:0}
+.reports-mark.ncsc{background:#173a56;color:#8bc9ef}
+.reports-mark.eu{background:#28345c;color:#b4c5ff}
+.reports-mark.canada{background:#4b2830;color:#ffabb6}
+.reports-mark.australia{background:#3c3158;color:#c8b8ff}
+.reports-mark.sweden{background:#4a3c20;color:#f4d184}
+.reports-mark.ukraine{background:#203e49;color:#95d5dc}
+.report-source.ncsc{background:#173a56;color:#8bc9ef}
+.report-source.eu{background:#28345c;color:#b4c5ff}
+.report-source.canada{background:#4b2830;color:#ffabb6}
+.report-source.australia{background:#3c3158;color:#c8b8ff}
+.report-source.sweden{background:#4a3c20;color:#f4d184}
+.report-source.ukraine{background:#203e49;color:#95d5dc}
+.report-card{min-height:112px}
+.report-card>a{overflow-wrap:anywhere}
