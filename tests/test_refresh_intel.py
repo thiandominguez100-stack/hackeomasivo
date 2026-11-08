@@ -1,4 +1,6 @@
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -102,3 +104,39 @@ class AtomAndSourceRegistryTests(unittest.TestCase):
         self.assertEqual(len(keys), len(set(keys)))
         for _key, _name, _kind, url, _host in refresh_intel.REPORT_FEEDS:
             self.assertTrue(url.startswith("https://"))
+
+
+class PublicationHistoryTests(unittest.TestCase):
+    def test_archive_deduplicates_and_rejects_untrusted_links(self):
+        original_path = refresh_intel.HISTORY_OUT
+        with tempfile.TemporaryDirectory() as directory:
+            refresh_intel.HISTORY_OUT = Path(directory) / "publications-history.json"
+            try:
+                reports = {"items": [
+                    {
+                        "sourceKey": "sansDiary",
+                        "sourceName": "SANS ISC",
+                        "kind": "Research",
+                        "title": "Official publication",
+                        "url": "https://isc.sans.edu/diary/123",
+                        "publishedAt": "2026-11-08T12:00:00Z",
+                    },
+                    {
+                        "sourceKey": "sansDiary",
+                        "sourceName": "SANS ISC",
+                        "kind": "Research",
+                        "title": "Untrusted mirror",
+                        "url": "https://isc.sans.edu.attacker.invalid/diary/123",
+                        "publishedAt": "2026-11-08T12:00:00Z",
+                    },
+                ]}
+                archive = refresh_intel.update_publication_history(reports)
+                stored = json.loads(refresh_intel.HISTORY_OUT.read_text(encoding="utf-8"))
+                self.assertEqual(archive["itemCount"], 1)
+                self.assertEqual(stored["schemaVersion"], 1)
+                self.assertEqual(stored["retentionDays"], 365)
+                self.assertEqual(stored["items"][0]["url"], "https://isc.sans.edu/diary/123")
+                self.assertNotIn("description", stored["items"][0])
+                self.assertNotIn("ip", stored["items"][0])
+            finally:
+                refresh_intel.HISTORY_OUT = original_path
