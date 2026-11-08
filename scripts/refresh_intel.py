@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import ipaddress
 import json
-import os
 import time
 from collections import defaultdict
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -240,7 +239,7 @@ def fetch_cisa() -> dict:
 
 def preserve_or_error(previous: dict, key: str, error: Exception) -> dict:
     old = ((previous.get("feeds") or {}).get(key) or {}).copy()
-    if old and old.get("status") == "ok":
+    if old and old.get("status") in {"ok", "stale"}:
         old["status"] = "stale"
         old["lastErrorAt"] = iso_now()
         old["lastError"] = type(error).__name__
@@ -253,7 +252,6 @@ def preserve_or_error(previous: dict, key: str, error: Exception) -> dict:
 
 def main() -> None:
     previous = read_previous()
-    old_feeds = previous.get("feeds") or {}
     feeds = {}
 
     try:
