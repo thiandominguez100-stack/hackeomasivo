@@ -91,3 +91,28 @@ test("interface includes the eight-source health list", () => {
   assert.match(app, /acscAustralia/);
   assert.match(app, /certUa/);
 });
+
+test("country markers declare their aggregate centroid scope and fade before local zoom", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  assert.match(html, /CENTROIDES NACIONALES/);
+  assert.match(html, /EXPLORAR CARTOGRAFÍA/);
+  assert.match(app, /COUNTRY_MARKER_HIDE_ZOOM/);
+  const zoomOpacityLayers = app.match(/"circle-opacity":\s*\["interpolate",\s*\["linear"\],\s*\["zoom"\]/g) || [];
+  assert.ok(zoomOpacityLayers.length >= 2, "both country marker layers must fade with map zoom");
+  assert.match(app, /Centroide nacional aproximado/);
+});
+
+test("Incident Explorer has filters, independent data loading, and offline cache support", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const sw = fs.readFileSync(path.join(__dirname, "../sw.js"), "utf8");
+  for (const id of ["incidentSearch", "incidentCategory", "incidentCountry", "incidentStatus", "incidentVerification", "incidentList", "incidentTotal"]) {
+    assert.match(html, new RegExp('id="' + id + '"'));
+  }
+  assert.match(html, /incidents\.js\?v=13/);
+  assert.match(app, /data\/incidents\.json/);
+  assert.match(app, /NexusIncidentData\.filterIncidents/);
+  assert.match(sw, /data\/incidents\.json/);
+  assert.match(sw, /incidents\.js\?v=13/);
+});
