@@ -48,6 +48,14 @@ test("validateIncident accepts a genuine subdomain of the declared source host",
   }), true);
 });
 
+test("validateIncident rejects an otherwise self-consistent but unapproved publisher domain", () => {
+  assert.equal(validateIncident({
+    ...baseIncident,
+    sourceHost: "untrusted.example",
+    sourceUrl: "https://untrusted.example/incident"
+  }), false);
+});
+
 test("validateIncident rejects unknown enums and invalid calendar dates", () => {
   assert.equal(validateIncident({ ...baseIncident, impactLevel: "catastrophic" }), false);
   assert.equal(validateIncident({ ...baseIncident, disclosedAt: "2026-02-30" }), false);
