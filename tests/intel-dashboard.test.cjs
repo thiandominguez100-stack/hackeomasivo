@@ -100,7 +100,8 @@ test("country markers declare their aggregate centroid scope and fade before loc
   assert.match(app, /COUNTRY_MARKER_HIDE_ZOOM/);
   const zoomOpacityLayers = app.match(/"circle-opacity":\s*\["interpolate",\s*\["linear"\],\s*\["zoom"\]/g) || [];
   assert.ok(zoomOpacityLayers.length >= 2, "both country marker layers must fade with map zoom");
-  assert.match(app, /map\.setLayoutProperty\(id, "visibility", localScale \? "none" : "visible"\)/);
+  assert.match(app, /const visibility = localScale \? "none" : "visible"/);
+  assert.match(app, /map\.setLayoutProperty\(id, "visibility", visibility\)/);
   assert.match(app, /Centroide nacional aproximado/);
 });
 
