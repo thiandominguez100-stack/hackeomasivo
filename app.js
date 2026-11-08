@@ -82,7 +82,7 @@
     safeText($("dailySources"), day ? fmt(day.sources) : "—");
     safeText($("dailyTargets"), day ? fmt(day.targets) : "—");
     safeText($("dailyDate"), day && day.date ? "DShield · " + day.date + " UTC" : "DShield · día no disponible");
-    safeText($("kevTotal"), cisa && Number.isFinite(Number(cisa.totalVulnerabilities)) ? fmt(cisa.totalVulnerabilities) : "—");
+    safeText($("kevTotal"), cisa && cisa.totalVulnerabilities !== null && cisa.totalVulnerabilities !== undefined && Number.isFinite(Number(cisa.totalVulnerabilities)) ? fmt(cisa.totalVulnerabilities) : "—");
 
     const infocon = dshield && dshield.infocon ? String(dshield.infocon).toUpperCase() : "—";
     const infoconNode = $("infoconValue");
@@ -333,36 +333,41 @@
       map.on("mouseenter", "nexus-country-points", () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", "nexus-country-points", () => { map.getCanvas().style.cursor = ""; });
 
-      // Public building vector tiles: display only where the provider supplies mapped features.
-      map.addSource("nexus-building-data", { type: "vector", url: "https://tiles.openfreemap.org/planet" });
-      const labelLayer = (map.getStyle().layers.find((layer) => layer.type === "symbol") || {}).id;
-      const beforeLayer = labelLayer || undefined;
-      map.addLayer({
-        id: "nexus-building-footprints", source: "nexus-building-data", "source-layer": "building",
-        type: "fill", minzoom: 14.5,
-        filter: ["!=", ["get", "hide_3d"], true],
-        paint: { "fill-color": "#6ca6b8", "fill-opacity": 0.20, "fill-outline-color": "#9bd5df" }
-      }, beforeLayer);
-      map.addLayer({
-        id: "nexus-3d-buildings", source: "nexus-building-data", "source-layer": "building",
-        type: "fill-extrusion", minzoom: 14.5,
-        filter: ["!=", ["get", "hide_3d"], true],
-        paint: {
-          "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], ["get", "height"], 8],
-            0, "#24475b", 35, "#397b91", 100, "#79b6c2", 250, "#b6cbd0"],
-          "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.8,
-            ["coalesce", ["get", "render_height"], ["get", "height"], 8]],
-          "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
-          "fill-extrusion-opacity": 0.96
-        }
-      }, beforeLayer);
-      ["nexus-3d-buildings", "nexus-building-footprints"].forEach((layerId) => {
-        map.on("click", layerId, addBuildingInspector);
-        map.on("mouseenter", layerId, () => { map.getCanvas().style.cursor = "pointer"; });
-        map.on("mouseleave", layerId, () => { map.getCanvas().style.cursor = ""; });
-      });
-
-      const hasBuildings = !!map.getLayer("nexus-3d-buildings");
+      // Public building vector tiles: keep this optional so missing building coverage
+      // never prevents the country-level threat map from loading.
+      let hasBuildings = false;
+      try {
+        map.addSource("nexus-building-data", { type: "vector", url: "https://tiles.openfreemap.org/planet" });
+        const labelLayer = (map.getStyle().layers.find((layer) => layer.type === "symbol") || {}).id;
+        const beforeLayer = labelLayer || undefined;
+        map.addLayer({
+          id: "nexus-building-footprints", source: "nexus-building-data", "source-layer": "building",
+          type: "fill", minzoom: 14.5,
+          filter: ["!=", ["get", "hide_3d"], true],
+          paint: { "fill-color": "#6ca6b8", "fill-opacity": 0.20, "fill-outline-color": "#9bd5df" }
+        }, beforeLayer);
+        map.addLayer({
+          id: "nexus-3d-buildings", source: "nexus-building-data", "source-layer": "building",
+          type: "fill-extrusion", minzoom: 14.5,
+          filter: ["!=", ["get", "hide_3d"], true],
+          paint: {
+            "fill-extrusion-color": ["interpolate", ["linear"], ["coalesce", ["get", "render_height"], ["get", "height"], 8],
+              0, "#24475b", 35, "#397b91", 100, "#79b6c2", 250, "#b6cbd0"],
+            "fill-extrusion-height": ["interpolate", ["linear"], ["zoom"], 14.5, 0, 15.8,
+              ["coalesce", ["get", "render_height"], ["get", "height"], 8]],
+            "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], ["get", "min_height"], 0],
+            "fill-extrusion-opacity": 0.96
+          }
+        }, beforeLayer);
+        ["nexus-3d-buildings", "nexus-building-footprints"].forEach((layerId) => {
+          map.on("click", layerId, addBuildingInspector);
+          map.on("mouseenter", layerId, () => { map.getCanvas().style.cursor = "pointer"; });
+          map.on("mouseleave", layerId, () => { map.getCanvas().style.cursor = ""; });
+        });
+        hasBuildings = !!map.getLayer("nexus-3d-buildings");
+      } catch (error) {
+        console.warn("NEXUS building layer unavailable:", error);
+      }
       $("buildingToggle").disabled = !hasBuildings;
       $("buildingToggle").checked = hasBuildings;
       safeText($("mapStatus"), hasBuildings
