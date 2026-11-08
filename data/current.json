@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": null,
+  "refreshIntervalMinutes": 60,
+  "overallStatus": "pending",
+  "feeds": {
+    "dshield": {
+      "status": "pending",
+      "sourceUrl": "https://isc.sans.edu/data/",
+      "countryAggregates": [],
+      "dailyHistory": [],
+      "topObservedSources": []
+    },
+    "cisaKev": {
+      "status": "pending",
+      "sourceUrl": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "totalVulnerabilities": null,
+      "recent": []
+    }
+  },
+  "methodology": {
+    "dshield": "Sensor-submitted network observations. These are not necessarily confirmed criminal attacks.",
+    "country": "Country markers use approximate country centroids and registered ASN country, not personal or device location.",
+    "cisaKev": "Known-exploited vulnerability catalogue, not a real-time incident feed.",
+    "limits": "Awaiting the first automated collection. No sample or simulated events are shown."
+  }
+}
