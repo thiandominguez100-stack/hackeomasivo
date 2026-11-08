@@ -1,4 +1,4 @@
-# NEXUS 4.1 — Global Cyber Threat Observatory
+# NEXUS 4.2 — Global Cyber Threat Observatory
 
 NEXUS dejó de generar tráfico, rutas o eventos ficticios. Ahora presenta un snapshot de fuentes públicas de inteligencia defensiva, actualizado automáticamente mediante GitHub Actions y publicado como JSON estático en GitHub Pages.
 
