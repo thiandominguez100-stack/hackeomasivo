@@ -454,7 +454,8 @@
 
       const declaredCount = Array.isArray(payload.items) ? payload.items.length : 0;
       const omitted = Math.max(0, declaredCount - incidentRegistry.length);
-      const sourceDate = payload.generatedAt ? dateOnlyLabel(payload.generatedAt.slice(0, 10)) : "fecha no informada";
+      const reviewedAt = payload.reviewedAt || payload.generatedAt || "";
+      const sourceDate = reviewedAt ? dateOnlyLabel(String(reviewedAt).slice(0, 10)) : "fecha no informada";
       safeText($("incidentNotice"), omitted
         ? "Registro curado · " + sourceDate + " · se omitieron " + omitted + " fichas que no pasaron la validación."
         : "Registro curado · " + sourceDate + " · no es exhaustivo ni está en tiempo real. Los estados corresponden a la última actualización citada.");
@@ -497,6 +498,10 @@
   function updateMapScaleStatus() {
     if (!mapReady || !map) return;
     const localScale = map.getZoom() >= COUNTRY_MARKER_HIDE_ZOOM;
+    const visibility = localScale ? "none" : "visible";
+    ["nexus-country-glow", "nexus-country-points"].forEach((id) => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visibility);
+    });
     safeText($("mapStatus"), localScale
       ? "Escala local · burbujas nacionales ocultas (" + lastCountryFeatureCount + " países agregados)"
       : lastCountryFeatureCount + " países con registros · centroides nacionales aproximados");
