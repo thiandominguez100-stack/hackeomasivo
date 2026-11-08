@@ -1,6 +1,6 @@
 const test=require("node:test");
 const assert=require("node:assert/strict");
-const {greatCirclePath,interpolatePath,createRoute,NexusSimulation,HUBS}=require("../simulation.js");
+const {greatCirclePath,interpolatePath,createRoute,NexusSimulation,HUBS,TYPES,TYPE_COLORS}=require("../simulation.js");
 
 test("great-circle route includes exact endpoints and bounded intermediate points",()=>{
  const a=[-58.3816,-34.6037],b=[2.3522,48.8566],path=greatCirclePath(a,b,32);
@@ -23,4 +23,9 @@ test("simulation clamps event count and never exceeds target",()=>{
 });
 test("simulation pause and reset preserve consistent progress",()=>{
  const sim=new NexusSimulation();sim.configure(10000,5);sim.start();sim.advance(.1);assert.ok(sim.count>0);sim.pause();const n=sim.count;sim.advance(2);assert.equal(sim.count,n);sim.reset();assert.equal(sim.count,0);assert.equal(sim.snapshot().progress,0);
+});
+test("every fictional event category has a distinct visible color",()=>{
+ assert.equal(TYPES.length,5);
+ assert.equal(new Set(TYPES.map(type=>TYPE_COLORS[type])).size,TYPES.length);
+ assert.ok(TYPES.every(type=>/^#[0-9a-f]{6}$/i.test(TYPE_COLORS[type])));
 });
