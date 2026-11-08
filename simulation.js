@@ -17,8 +17,8 @@
 {name:"Johannesburg",lat:-26.2041,lon:28.0473,region:"África"}
 ];
 const REGIONS=[...new Set(HUBS.map(h=>h.region))].map(name=>({name,...(HUBS.find(h=>h.region===name))}));
-const TYPES=["Anomalía de tráfico","Evento de autenticación","Señal de malware (simulada)","Cambio de perímetro","Actividad automatizada"];
-const TYPE_COLORS={"Anomalía de tráfico":"#45c6ff","Evento de autenticación":"#a78bfa","Señal de malware (simulada)":"#ff668a","Cambio de perímetro":"#f5b942","Actividad automatizada":"#5ee0ae"};
+const TYPES=["Phishing (simulado)","Malware (simulado)","Denegación de servicio (simulada)","Acceso no autorizado (simulado)","Reconocimiento (simulado)"];
+const TYPE_COLORS={"Phishing (simulado)":"#45c6ff","Malware (simulado)":"#a78bfa","Denegación de servicio (simulada)":"#ff668a","Acceso no autorizado (simulado)":"#f5b942","Reconocimiento (simulado)":"#5ee0ae"};
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 function greatCirclePath(a,b,steps=48){const rad=Math.PI/180,deg=180/Math.PI,lon1=a[0]*rad,lat1=a[1]*rad,lon2=b[0]*rad,lat2=b[1]*rad;const v1=[Math.cos(lat1)*Math.cos(lon1),Math.cos(lat1)*Math.sin(lon1),Math.sin(lat1)],v2=[Math.cos(lat2)*Math.cos(lon2),Math.cos(lat2)*Math.sin(lon2),Math.sin(lat2)];const dot=clamp(v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2],-1,1),omega=Math.acos(dot),sin=Math.sin(omega),out=[];for(let i=0;i<=steps;i++){const t=i/steps;let v;if(Math.abs(sin)<1e-8)v=v1.map((x,k)=>x*(1-t)+v2[k]*t);else{const p=Math.sin((1-t)*omega)/sin,q=Math.sin(t*omega)/sin;v=v1.map((x,k)=>p*x+q*v2[k])}const len=Math.hypot(...v)||1;v=v.map(x=>x/len);let lon=Math.atan2(v[1],v[0])*deg,lat=Math.atan2(v[2],Math.hypot(v[0],v[1]))*deg;if(i===0){lon=a[0];lat=a[1]}if(i===steps){lon=b[0];lat=b[1]}out.push([lon,lat])}return out}
 function interpolatePath(path,progress){const p=clamp(progress,0,1)*(path.length-1),i=Math.min(path.length-2,Math.floor(p)),t=p-i,a=path[i],b=path[i+1];return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]}
