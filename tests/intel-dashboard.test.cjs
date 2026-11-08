@@ -42,7 +42,7 @@ test("no generated simulation events or fake route fields are present", () => {
 
 test("published page is an observatory and does not load the old simulator", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  assert.match(html, /BUILD 4.2/);
+  assert.match(html, /BUILD 4.3/);
   assert.match(html, /DShield/);
   assert.match(html, /CISA/);
   assert.doesNotMatch(html, /simulation\.js/);
@@ -53,7 +53,7 @@ test("research and advisory items are source-linked and contain no raw IP fields
   const rows = snapshot.feeds.reports?.items || [];
   assert.ok(Array.isArray(rows));
   for (const row of rows) {
-    assert.ok(["sansDiary", "cisaAdvisories"].includes(row.sourceKey));
+    assert.ok(["sansDiary", "cisaAdvisories", "ukNcsc", "certEu", "canadaCyber", "acscAustralia", "certSe", "certUa"].includes(row.sourceKey));
     assert.ok(typeof row.title === "string" && row.title.length > 0);
     const url = new URL(row.url);
     assert.equal(url.protocol, "https:");
@@ -61,4 +61,22 @@ test("research and advisory items are source-linked and contain no raw IP fields
     assert.ok(!("ip" in row));
     assert.ok(!("description" in row));
   }
+});
+
+test("reports feed tracks the expanded eight-source allowlist", () => {
+  const states = snapshot.feeds.reports?.sourceStates || {};
+  const known = ["sansDiary", "cisaAdvisories", "ukNcsc", "certEu", "canadaCyber", "acscAustralia", "certSe", "certUa"];
+  for (const key of Object.keys(states)) assert.ok(known.includes(key));
+  assert.ok(known.includes("ukNcsc"));
+  assert.ok(known.includes("certEu"));
+  assert.ok(known.includes("canadaCyber"));
+});
+
+test("interface includes the eight-source health list", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  assert.match(html, /BUILD 4\.3/);
+  assert.match(html, /reportSourcesHealth/);
+  assert.match(app, /acscAustralia/);
+  assert.match(app, /certUa/);
 });
