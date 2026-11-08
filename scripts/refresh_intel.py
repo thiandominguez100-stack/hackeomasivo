@@ -9,6 +9,9 @@ from __future__ import annotations
 import ipaddress
 import json
 import time
+import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlparse
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -198,6 +201,103 @@ def fetch_dshield() -> dict:
         "description": "Aggregated reports collected by DShield sensors. They are observations, not a complete count of all Internet attacks.",
     }
 
+
+def fetch_text(url: str) -> str:
+    request = Request(
+        url,
+        headers={"User-Agent": USER_AGENT, "Accept": "application/rss+xml, application/xml, text/xml"},
+        method="GET",
+    )
+    with urlopen(request, timeout=35) as response:
+        return response.read().decode("utf-8", errors="replace")
+
+
+def _rss_child_text(element, name: str) -> str:
+    for child in list(element):
+        if child.tag.rsplit("}", 1)[-1].lower() == name.lower():
+            return "".join(child.itertext()).strip()
+    return ""
+
+
+def parse_rss_items(xml_text: str, source_key: str, source_name: str, item_kind: str, allowed_host: str, limit: int = 8) -> list[dict]:
+    root = ET.fromstring(xml_text)
+    output = []
+    for item in root.iter():
+        if item.tag.rsplit("}", 1)[-1].lower() != "item":
+            continue
+        title = " ".join(_rss_child_text(item, "title").split())
+        link = _rss_child_text(item, "link")
+        published = _rss_child_text(item, "pubDate") or _rss_child_text(item, "published")
+        if not title or not link:
+            continue
+        try:
+            parsed = urlparse(link)
+            host = (parsed.hostname or "").lower()
+            if parsed.scheme != "https" or not (host == allowed_host or host.endswith("." + allowed_host)):
+                continue
+            published_at = parsedate_to_datetime(published).astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        except (TypeError, ValueError, OverflowError):
+            published_at = ""
+        output.append({
+            "sourceKey": source_key,
+            "sourceName": source_name,
+            "kind": item_kind,
+            "title": title[:240],
+            "url": link,
+            "publishedAt": published_at,
+        })
+    output.sort(key=lambda row: row["publishedAt"], reverse=True)
+    return output[:limit]
+
+
+def fetch_reports(previous: dict) -> dict:
+    sources = [
+        ("sansDiary", "SANS ISC", "Diario de investigación", "https://isc.sans.edu/rssfeed.xml", "isc.sans.edu"),
+        ("cisaAdvisories", "CISA", "Aviso de seguridad", "https://www.cisa.gov/cybersecurity-advisories/all.xml", "cisa.gov"),
+    ]
+    previous_feed = ((previous.get("feeds") or {}).get("reports") or {})
+    previous_items = previous_feed.get("items", []) if isinstance(previous_feed, dict) else []
+    combined = []
+    source_states = {}
+    successes = 0
+
+    for key, name, kind, url, host in sources:
+        try:
+            items = parse_rss_items(fetch_text(url), key, name, kind, host, limit=8)
+            combined.extend(items)
+            source_states[key] = {"status": "ok", "itemCount": len(items), "sourceUrl": url}
+            successes += 1
+        except Exception as error:
+            retained = [
+                row for row in previous_items
+                if isinstance(row, dict) and row.get("sourceKey") == key
+                and row.get("url")
+            ]
+            combined.extend(retained)
+            source_states[key] = {
+                "status": "stale" if retained else "error",
+                "itemCount": len(retained),
+                "sourceUrl": url,
+                "lastError": type(error).__name__,
+            }
+
+    combined.sort(key=lambda row: row.get("publishedAt") or "", reverse=True)
+    if successes == len(sources):
+        status = "ok"
+    elif combined:
+        status = "stale"
+    else:
+        status = "error"
+
+    old_success = previous_feed.get("lastSuccessfulAt") if isinstance(previous_feed, dict) else None
+    return {
+        "status": status,
+        "lastSuccessfulAt": iso_now() if successes else old_success,
+        "sourceStates": source_states,
+        "items": combined[:16],
+        "description": "Titulares y fechas de diarios de investigación SANS ISC y avisos oficiales CISA. Abrir la fuente para leer el contexto; no todos los artículos describen un ataque confirmado ni actividad todavía activa.",
+    }
+
 def fetch_cisa() -> dict:
     url = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     catalog = fetch_json(url)
@@ -259,6 +359,12 @@ def main() -> None:
     except Exception as error:  # Keep the dashboard useful if an upstream is down.
         print(f"DShield refresh failed: {type(error).__name__}")
         feeds["dshield"] = preserve_or_error(previous, "dshield", error)
+
+    try:
+        feeds["reports"] = fetch_reports(previous)
+    except Exception as error:
+        print(f"Reports refresh failed: {type(error).__name__}")
+        feeds["reports"] = preserve_or_error(previous, "reports", error)
 
     try:
         feeds["cisaKev"] = fetch_cisa()
