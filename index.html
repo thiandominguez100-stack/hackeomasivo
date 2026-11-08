@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111b">
   <meta name="description" content="NEXUS: observatorio de inteligencia de amenazas con datos públicos de DShield y CISA.">
-  <title>NEXUS 4.2 — Global Cyber Threat Observatory</title>
+  <title>NEXUS 4.3 — Global Cyber Threat Observatory</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/favicon.svg">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=11">
+  <link rel="stylesheet" href="./styles.css?v=12">
 </head>
 <body>
 <div class="shell">
@@ -24,7 +24,7 @@
 
   <section class="hero">
     <div>
-      <label class="eyebrow">THREAT INTELLIGENCE · BUILD 4.2</label>
+      <label class="eyebrow">THREAT INTELLIGENCE · BUILD 4.3</label>
       <h1>Global <em>Cyber Threat</em> Observatory</h1>
       <p>Datos públicos de seguridad, actividad observada por sensores e incidentes documentados.</p>
     </div>
@@ -101,7 +101,8 @@
         <div class="source-health">
           <div class="source-row"><span class="source-mark dshield-mark">D</span><div><b>DShield / SANS ISC</b><small id="dshieldInfo">Esperando datos…</small></div><span class="feed-state pending" id="dshieldState">PENDIENTE</span></div>
           <div class="source-row"><span class="source-mark cisa-mark">C</span><div><b>CISA · Known Exploited Vulnerabilities</b><small id="cisaInfo">Esperando datos…</small></div><span class="feed-state pending" id="cisaState">PENDIENTE</span></div>
-          <div class="source-row"><span class="source-mark reports-mark">R</span><div><b>SANS Diario / CISA Avisos</b><small id="reportsInfo">Esperando publicaciones…</small></div><span class="feed-state pending" id="reportsState">PENDIENTE</span></div>
+          <div class="source-divider-label">CANALES DE ALERTAS Y ANÁLISIS · 8 ORGANISMOS</div>
+          <div id="reportSourcesHealth" class="report-sources-health"><p class="empty-state">Cargando fuentes públicas…</p></div>
         </div>
         <p class="method-note">Una fuente puede quedar temporalmente desactualizada. NEXUS conserva la última lectura válida y señala su antigüedad.</p>
       </div>
@@ -129,9 +130,9 @@
   </section>
 
   <section class="panel reports-panel">
-    <div class="panel-head"><div><label>INCIDENT REPORTS & ADVISORIES</label><h2>Investigaciones y avisos publicados</h2></div><span class="subtag">SANS ISC · CISA</span></div>
+    <div class="panel-head"><div><label>INCIDENT REPORTS & ADVISORIES</label><h2>Investigaciones y avisos publicados</h2></div><span class="subtag">8 FUENTES OFICIALES</span></div>
     <div id="reportsList" class="report-grid"><p class="empty-state">Esperando publicaciones oficiales…</p></div>
-    <p class="source-caption">Titulares y fechas de fuentes reconocidas. Un aviso puede describir riesgos o recomendaciones y no significa que un ataque siga activo. Abrí cada publicación para consultar su contexto original.</p>
+    <p class="source-caption">Titulares, fechas y enlaces originales de ocho canales oficiales. Los títulos pueden conservar el idioma original. Un aviso no demuestra que un ataque siga activo; consultá siempre el contexto del organismo emisor.</p>
   </section>
 
   <section class="panel kev-panel">
@@ -163,6 +164,6 @@
   </footer>
 </div>
 <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
-<script src="./app.js?v=11"></script>
+<script src="./app.js?v=12"></script>
 </body>
 </html>
