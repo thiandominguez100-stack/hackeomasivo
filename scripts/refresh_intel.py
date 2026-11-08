@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "current.json"
 HISTORY_OUT = ROOT / "data" / "publications-history.json"
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; NEXUS-Global-Cyber-Observatory/4.3; "
+    "Mozilla/5.0 (compatible; NEXUS-Global-Cyber-Observatory/5.0; "
     "+https://github.com/thiandominguez100-stack/hackeomasivo)"
 )
 DASHBOARD_SCHEMA = 1
