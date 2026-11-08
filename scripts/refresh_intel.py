@@ -463,7 +463,7 @@ def update_publication_history(reports: dict) -> dict:
         "description": "Archivo histórico de metadatos de publicaciones oficiales. No es un registro exhaustivo de incidentes confirmados.",
     }
     HISTORY_OUT.parent.mkdir(parents=True, exist_ok=True)
-    HISTORY_OUT.write_text(json.dumps(archive, ensure_ascii=False, separators=(",", ":")) + "\\n", encoding="utf-8")
+    HISTORY_OUT.write_text(json.dumps(archive, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     return archive
 
 
