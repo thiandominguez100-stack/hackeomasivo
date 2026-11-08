@@ -205,11 +205,18 @@ def fetch_dshield() -> dict:
 def fetch_text(url: str) -> str:
     request = Request(
         url,
-        headers={"User-Agent": USER_AGENT, "Accept": "application/rss+xml, application/xml, text/xml"},
+        headers={"User-Agent": USER_AGENT, "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml"},
         method="GET",
     )
-    with urlopen(request, timeout=35) as response:
-        return response.read().decode("utf-8", errors="replace")
+    for attempt in range(2):
+        try:
+            with urlopen(request, timeout=35) as response:
+                return response.read().decode("utf-8", errors="replace")
+        except (URLError, TimeoutError, OSError):
+            if attempt == 1:
+                raise
+            time.sleep(2)
+    raise TimeoutError("Feed request failed after retry")
 
 
 def _local_name(tag: str) -> str:
@@ -226,12 +233,18 @@ def _child_text(element, names: set[str]) -> str:
 def _feed_date(value: str) -> str:
     if not value:
         return ""
+    # email.utils does not consistently recognise European timezone abbreviations.
+    value = value.strip()
+    if value.endswith(" CEST"):
+        value = value[:-5] + " +0200"
+    elif value.endswith(" CET"):
+        value = value[:-4] + " +0100"
     parsed = None
     try:
         parsed = parsedate_to_datetime(value)
     except (TypeError, ValueError, OverflowError):
         try:
-            candidate = value.strip().replace("Z", "+00:00")
+            candidate = value.replace("Z", "+00:00")
             parsed = datetime.fromisoformat(candidate)
         except (TypeError, ValueError, OverflowError):
             return ""
