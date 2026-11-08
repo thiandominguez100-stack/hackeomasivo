@@ -21,8 +21,8 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "current.json"
 USER_AGENT = (
-    "NEXUS-Global-Cyber-Observatory/1.0 "
-    "(read-only defensive research; https://github.com/thiandominguez100-stack/hackeomasivo)"
+    "Mozilla/5.0 (compatible; NEXUS-Global-Cyber-Observatory/4.3; "
+    "+https://github.com/thiandominguez100-stack/hackeomasivo)"
 )
 DASHBOARD_SCHEMA = 1
 
