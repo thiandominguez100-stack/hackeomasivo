@@ -19,7 +19,7 @@ test("generated routes only use declared fictional city hubs",()=>{
 });
 test("simulation clamps event count and never exceeds target",()=>{
  const sim=new NexusSimulation();sim.configure(1e15,1000);assert.equal(sim.target,1e12);
- sim.count=sim.target-2;sim.advance(1);assert.equal(sim.count,sim.target);assert.equal(sim.running,false);
+ sim.count=sim.target-2;sim.advance(.25);assert.equal(sim.count,sim.target);assert.equal(sim.running,false);
 });
 test("simulation pause and reset preserve consistent progress",()=>{
  const sim=new NexusSimulation();sim.configure(10000,5);sim.start();sim.advance(.1);assert.ok(sim.count>0);sim.pause();const n=sim.count;sim.advance(2);assert.equal(sim.count,n);sim.reset();assert.equal(sim.count,0);assert.equal(sim.snapshot().progress,0);
