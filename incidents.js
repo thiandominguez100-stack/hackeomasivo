@@ -6,6 +6,7 @@
   const ALLOWED_IMPACT_LEVELS = new Set(["critical", "high", "moderate", "low", "unassessed"]);
   const ALLOWED_VERIFICATION = new Set(["official", "media-attributed"]);
   const ALLOWED_PRECISION = new Set(["national", "state", "county", "city", "unknown"]);
+  const ALLOWED_SOURCE_HOSTS = new Set(["uscourts.gov", "nema.nebraska.gov", "kwch.com"]);
   const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
   const DOMAIN_PATTERN = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 
@@ -39,7 +40,7 @@
 
     try {
       const url = new URL(item.sourceUrl);
-      if (url.protocol !== "https:" || url.username || url.password || !hostMatches(url.hostname, item.sourceHost)) return false;
+      if (url.protocol !== "https:" || url.username || url.password || !ALLOWED_SOURCE_HOSTS.has(String(item.sourceHost).toLowerCase()) || !hostMatches(url.hostname, item.sourceHost)) return false;
     } catch {
       return false;
     }
