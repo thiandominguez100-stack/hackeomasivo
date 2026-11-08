@@ -42,7 +42,7 @@ test("no generated simulation events or fake route fields are present", () => {
 
 test("published page is an observatory and does not load the old simulator", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  assert.match(html, /BUILD 4.3/);
+  assert.match(html, /BUILD 5.0/);
   assert.match(html, /DShield/);
   assert.match(html, /CISA/);
   assert.doesNotMatch(html, /simulation\.js/);
