@@ -161,3 +161,13 @@ footer a{color:#7cabb9}
 .report-source.ukraine{background:#203e49;color:#95d5dc}
 .report-card{min-height:112px}
 .report-card>a{overflow-wrap:anywhere}
+
+
+/* NEXUS 5.0 — evidence explorer controls */
+.report-filters{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,.55fr) auto;gap:9px;align-items:center;margin:0 0 12px}
+.report-filters input,.report-filters select{width:100%;min-width:0;padding:10px 11px;background:#07141e;border:1px solid #2b4658;border-radius:7px;color:var(--text);font:10px Manrope,system-ui}
+.report-filters input::placeholder{color:#6f8797}
+.report-filters input:focus,.report-filters select:focus{outline:2px solid #4bbdce;outline-offset:1px}
+.report-filters>span{color:#8ca5b4;font:8px 'DM Mono';white-space:nowrap;text-align:right}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:700px){.report-filters{grid-template-columns:1fr}.report-filters>span{text-align:left}}
