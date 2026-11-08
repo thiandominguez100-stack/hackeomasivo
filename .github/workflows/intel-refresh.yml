@@ -40,6 +40,8 @@ jobs:
             echo "Publishing snapshot attempt $attempt/5"
             git fetch --no-tags origin main:refs/remotes/origin/main
             git reset --hard origin/main
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             mkdir -p data
             cp "$RUNNER_TEMP/nexus-current.json" data/current.json
             git add data/current.json
