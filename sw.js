@@ -1,5 +1,5 @@
-const CACHE = "nexus-shell-v12";
-const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest"];
+const CACHE = "nexus-shell-v13";
+const FILES = ["./", "./index.html", "./styles.css?v=13", "./incidents.js?v=13", "./app.js?v=13", "./data/incidents.json", "./manifest.webmanifest"];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)).then(() => self.skipWaiting()));
 });
@@ -24,6 +24,24 @@ self.addEventListener("fetch", (event) => {
         const stale = await cache.match(stableKey);
         if (stale) return stale;
         return new Response(JSON.stringify({schemaVersion:1,overallStatus:"offline",generatedAt:null,feeds:{}}), {
+          status:503, headers:{"Content-Type":"application/json"}
+        });
+      }
+    })());
+    return;
+  }
+  if (url.pathname.endsWith("/data/incidents.json")) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const stableKey = new URL("./data/incidents.json", self.registration.scope).href;
+      try {
+        const fresh = await fetch(event.request, { cache: "no-store" });
+        if (fresh.ok) await cache.put(stableKey, fresh.clone());
+        return fresh;
+      } catch {
+        const stale = await cache.match(stableKey);
+        if (stale) return stale;
+        return new Response(JSON.stringify({schemaVersion:1,items:[]}), {
           status:503, headers:{"Content-Type":"application/json"}
         });
       }

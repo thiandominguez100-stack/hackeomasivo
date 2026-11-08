@@ -5,6 +5,8 @@
   const fmt = (value) => Number(value || 0).toLocaleString("es-AR");
   const emptyCollection = () => ({ type: "FeatureCollection", features: [] });
   const DATA_URL = "./data/current.json";
+  const DATA_INCIDENTS_URL = "./data/incidents.json";
+  const COUNTRY_MARKER_HIDE_ZOOM = 5.2;
   const CITY_HUBS = {
     "Buenos Aires": [-58.3816, -34.6037], "São Paulo": [-46.6333, -23.5505],
     "New York": [-74.006, 40.7128], "San Francisco": [-122.4194, 37.7749],
@@ -32,6 +34,8 @@
   let latest = null;
   let installPrompt = null;
   let refreshInProgress = false;
+  let incidentRegistry = [];
+  let lastCountryFeatureCount = 0;
 
   function safeText(node, value) {
     node.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
@@ -69,6 +73,15 @@
       timeZone: "UTC", day: "2-digit", month: "short", year: "numeric",
       hour: "2-digit", minute: "2-digit", hour12: false
     }) + " UTC";
+  }
+
+  function dateOnlyLabel(value) {
+    if (!value) return "No publicada";
+    const date = new Date(value + "T00:00:00Z");
+    if (Number.isNaN(date.getTime())) return "Fecha no disponible";
+    return date.toLocaleDateString("es-AR", {
+      timeZone: "UTC", day: "2-digit", month: "short", year: "numeric"
+    });
   }
 
   function setPill(status, text) {
@@ -281,6 +294,180 @@
     });
   }
 
+
+  const INCIDENT_LABELS = {
+    category: {
+      "cyber-incident": "Incidente cibernético",
+      ransomware: "Ransomware",
+      "service-disruption": "Interrupción de servicio"
+    },
+    status: { investigating: "En investigación", resolved: "Resuelto", unknown: "No informado" },
+    impact: {
+      critical: "Impacto crítico reportado",
+      high: "Impacto operativo alto",
+      moderate: "Impacto moderado reportado",
+      low: "Impacto bajo reportado",
+      unassessed: "Impacto no evaluado"
+    },
+    precision: {
+      national: "Alcance nacional",
+      state: "Precisión estatal",
+      county: "Precisión de condado",
+      city: "Precisión de ciudad",
+      unknown: "Ubicación no especificada"
+    },
+    verification: {
+      official: "Fuente oficial",
+      "media-attributed": "Medio con atribución a autoridades"
+    }
+  };
+
+  function incidentEventDate(item) {
+    if (!item.eventStart) return "Fecha del incidente no publicada";
+    const start = dateOnlyLabel(item.eventStart);
+    return item.eventEnd
+      ? start + " — " + dateOnlyLabel(item.eventEnd)
+      : "Desde " + start + " · final no informado";
+  }
+
+  function renderIncidentCards(items) {
+    const container = $("incidentList");
+    container.replaceChildren();
+    if (!items.length) {
+      addText(container, "p", "empty-state", "No hay incidentes que coincidan con los filtros. Probá quitar algún filtro o cambiar la búsqueda.");
+      return;
+    }
+
+    items.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "incident-card";
+
+      const top = document.createElement("div");
+      top.className = "incident-card-top";
+      addText(top, "span", "incident-category", INCIDENT_LABELS.category[item.category] || "Categoría no clasificada");
+      addText(top, "span", "incident-status " + item.status, INCIDENT_LABELS.status[item.status] || "Estado no informado");
+      card.appendChild(top);
+
+      addText(card, "h3", "incident-title", item.title);
+      addText(card, "p", "incident-organization", item.organization);
+      addText(card, "p", "incident-summary", item.summary);
+
+      const details = document.createElement("dl");
+      details.className = "incident-details";
+      const rows = [
+        ["Alcance geográfico", item.region + " · " + (INCIDENT_LABELS.precision[item.geographyPrecision] || "Precisión desconocida")],
+        ["Fecha del incidente", incidentEventDate(item)],
+        ["Publicado", dateOnlyLabel(item.disclosedAt)],
+        ["Estado según la fuente", (INCIDENT_LABELS.status[item.status] || "No informado") + " · " + dateOnlyLabel(item.statusAsOf)],
+        ["Impacto documentado", (INCIDENT_LABELS.impact[item.impactLevel] || "No evaluado") + " — " + item.impactNote]
+      ];
+      rows.forEach(([label, value]) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "incident-detail";
+        addText(wrapper, "dt", "", label);
+        addText(wrapper, "dd", "", value);
+        details.appendChild(wrapper);
+      });
+      card.appendChild(details);
+
+      const sourceRow = document.createElement("div");
+      sourceRow.className = "incident-source-row";
+      addText(sourceRow, "span", "incident-verification", INCIDENT_LABELS.verification[item.verificationLevel] || "Verificación no clasificada");
+      const sourceLink = document.createElement("a");
+      sourceLink.href = item.sourceUrl;
+      sourceLink.target = "_blank";
+      sourceLink.rel = "noopener noreferrer";
+      sourceLink.textContent = "Fuente: " + item.sourceName + " ↗";
+      sourceRow.appendChild(sourceLink);
+      card.appendChild(sourceRow);
+      container.appendChild(card);
+    });
+  }
+
+  function populateIncidentCountryFilter() {
+    const select = $("incidentCountry");
+    if (!select) return;
+    const selected = select.value;
+    select.replaceChildren();
+    const all = document.createElement("option");
+    all.value = "";
+    all.textContent = "Todos los países";
+    select.appendChild(all);
+
+    const countries = new Map();
+    incidentRegistry.forEach((item) => countries.set(item.countryCode, item.countryName));
+    [...countries.entries()].sort((a, b) => a[1].localeCompare(b[1], "es")).forEach(([code, name]) => {
+      const option = document.createElement("option");
+      option.value = code;
+      option.textContent = name;
+      select.appendChild(option);
+    });
+    if ([...select.options].some((option) => option.value === selected)) select.value = selected;
+  }
+
+  function renderIncidentExplorer() {
+    if (!window.NexusIncidentData) {
+      safeText($("incidentNotice"), "No se pudo cargar el validador del registro de incidentes.");
+      return;
+    }
+    const filters = {
+      query: $("incidentSearch").value,
+      category: $("incidentCategory").value,
+      countryCode: $("incidentCountry").value,
+      status: $("incidentStatus").value,
+      verificationLevel: $("incidentVerification").value
+    };
+    const filtered = window.NexusIncidentData.filterIncidents(incidentRegistry, filters);
+    const summary = window.NexusIncidentData.summarizeIncidents(incidentRegistry);
+    safeText($("incidentTotal"), summary.total);
+    safeText($("incidentInvestigating"), summary.investigating);
+    safeText($("incidentResolved"), summary.resolved);
+    safeText($("incidentMedia"), summary.mediaAttributed);
+    safeText($("incidentResultsCount"), filtered.length + " de " + summary.total + " registros");
+    renderIncidentCards(filtered);
+  }
+
+  function initIncidentExplorer() {
+    const search = $("incidentSearch");
+    if (!search) return;
+    search.addEventListener("input", renderIncidentExplorer);
+    ["incidentCategory", "incidentCountry", "incidentStatus", "incidentVerification"].forEach((id) => {
+      $(id).addEventListener("change", renderIncidentExplorer);
+    });
+    refreshIncidents();
+  }
+
+  async function refreshIncidents() {
+    try {
+      const response = await fetch(DATA_INCIDENTS_URL + "?v=" + Date.now(), {
+        method: "GET",
+        cache: "no-store",
+        headers: { "Accept": "application/json" }
+      });
+      if (!response.ok) throw new Error("No se pudo leer el registro de incidentes (" + response.status + ").");
+      const payload = await response.json();
+      incidentRegistry = window.NexusIncidentData
+        ? window.NexusIncidentData.normalizeIncidents(payload)
+        : [];
+      populateIncidentCountryFilter();
+      renderIncidentExplorer();
+
+      const declaredCount = Array.isArray(payload.items) ? payload.items.length : 0;
+      const omitted = Math.max(0, declaredCount - incidentRegistry.length);
+      const reviewedAt = payload.reviewedAt || payload.generatedAt || "";
+      const sourceDate = reviewedAt ? dateOnlyLabel(String(reviewedAt).slice(0, 10)) : "fecha no informada";
+      safeText($("incidentNotice"), omitted
+        ? "Registro curado · " + sourceDate + " · se omitieron " + omitted + " fichas que no pasaron la validación."
+        : "Registro curado · " + sourceDate + " · no es exhaustivo ni está en tiempo real. Los estados corresponden a la última actualización citada.");
+    } catch (error) {
+      console.warn("NEXUS incident registry:", error);
+      safeText($("incidentNotice"), incidentRegistry.length
+        ? "No se pudo actualizar el registro; se conserva la última lectura válida."
+        : "El registro no está disponible. El resto del observatorio continúa funcionando.");
+      renderIncidentExplorer();
+    }
+  }
+
   function renderSourceHealth(data) {
     const feeds = data && data.feeds ? data.feeds : {};
     const dshield = feeds.dshield || {};
@@ -308,6 +495,18 @@
     safeText($("lastUpdated"), data && data.generatedAt ? "Snapshot: " + dateLabel(data.generatedAt) : "Esperando primer conjunto de datos…");
   }
 
+  function updateMapScaleStatus() {
+    if (!mapReady || !map) return;
+    const localScale = map.getZoom() >= COUNTRY_MARKER_HIDE_ZOOM;
+    const visibility = localScale ? "none" : "visible";
+    ["nexus-country-glow", "nexus-country-points"].forEach((id) => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visibility);
+    });
+    safeText($("mapStatus"), localScale
+      ? "Escala local · burbujas nacionales ocultas (" + lastCountryFeatureCount + " países agregados)"
+      : lastCountryFeatureCount + " países con registros · centroides nacionales aproximados");
+  }
+
   function updateMap(dshield) {
     if (!mapReady || !map || !map.getSource("nexus-country-observations")) return;
     const rows = Array.isArray(dshield && dshield.countryAggregates) ? dshield.countryAggregates : [];
@@ -325,9 +524,8 @@
         geometry: { type: "Point", coordinates: [Number(row.longitude), Number(row.latitude)] }
       }));
     map.getSource("nexus-country-observations").setData({ type: "FeatureCollection", features });
-    safeText($("mapStatus"), features.length
-      ? features.length + " países con registros en la muestra de origen"
-      : "Sin geodatos suficientes; no se dibujan ubicaciones estimadas");
+    lastCountryFeatureCount = features.length;
+    updateMapScaleStatus();
   }
 
   function popupNode(title, lines, disclaimer) {
@@ -397,7 +595,7 @@
         id: "nexus-country-glow", type: "circle", source: "nexus-country-observations",
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["get", "reports"], 0, 8, 10000, 14, 100000, 22, 1000000, 31],
-          "circle-color": "#f6a84f", "circle-opacity": 0.16, "circle-blur": 0.8
+          "circle-color": "#f6a84f", "circle-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.16, 4.2, 0.16, COUNTRY_MARKER_HIDE_ZOOM, 0], "circle-blur": 0.8
         }
       });
       map.addLayer({
@@ -405,7 +603,7 @@
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["get", "reports"], 0, 3.5, 10000, 5, 100000, 7.5, 1000000, 10],
           "circle-color": ["interpolate", ["linear"], ["get", "reports"], 0, "#f5ca76", 100000, "#f59b53", 1000000, "#ff684e"],
-          "circle-opacity": 0.88, "circle-stroke-color": "#fff0d3", "circle-stroke-width": 1.1
+          "circle-opacity": ["interpolate", ["linear"], ["zoom"], 0, 0.88, 4.2, 0.88, COUNTRY_MARKER_HIDE_ZOOM, 0], "circle-stroke-color": "#fff0d3", "circle-stroke-width": 1.1
         }
       });
       map.on("click", "nexus-country-points", (event) => {
@@ -416,7 +614,7 @@
           ["Registros de origen en la muestra", fmt(p.sourceRecords)],
           ["Reportes asociados", fmt(p.reports)],
           ["Última observación", p.latestSeen || "No disponible"]
-        ], "País basado en el registro de red/ASN y centroide aproximado. No representa ubicación de víctimas ni de personas.");
+        ], "Centroide nacional aproximado basado en el país de registro de red/ASN. No es la ubicación de un incidente, víctima, dispositivo, persona ni infraestructura.");
         new maplibregl.Popup({ closeButton: true, maxWidth: "310px" })
           .setLngLat(event.lngLat).setDOMContent(node).addTo(map);
       });
@@ -461,10 +659,11 @@
       $("buildingToggle").disabled = !hasBuildings;
       $("buildingToggle").checked = hasBuildings;
       safeText($("mapStatus"), hasBuildings
-        ? "Globo activo · acercá a zoom 15+ y seleccioná una huella"
-        : "Globo activo · edificios no disponibles en esta capa");
+        ? "Vista mundial · los agregados nacionales se ocultan al acercar"
+        : "Vista mundial · edificios no disponibles en esta capa");
       safeText($("rendererStatus"), "MapLibre GL · WebGL");
       mapReady = true;
+      map.on("zoomend", updateMapScaleStatus);
       updateMap(latest && latest.feeds ? latest.feeds.dshield : null);
     });
 
@@ -538,6 +737,7 @@
   }
 
   initMap();
+  initIncidentExplorer();
   updateClock();
   setInterval(updateClock, 1000);
   refresh();
