@@ -54,3 +54,51 @@ class RssParsingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AtomAndSourceRegistryTests(unittest.TestCase):
+    def test_atom_parser_extracts_official_https_entry_without_copying_content(self):
+        sample = """<?xml version="1.0" encoding="UTF-8"?>
+        <feed xmlns="http://www.w3.org/2005/Atom">
+          <entry>
+            <title>Canadian security advisory (AV26-1133)</title>
+            <link href="https://cyber.gc.ca/en/alerts-advisories/example" rel="alternate" />
+            <updated>2026-11-06T21:00:51Z</updated>
+            <content>Long technical content should not be copied.</content>
+          </entry>
+        </feed>"""
+        rows = refresh_intel.parse_feed_items(
+            sample, "canadaCyber", "Canadian Cyber Centre", "Alerta",
+            "cyber.gc.ca", 5
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["title"], "Canadian security advisory (AV26-1133)")
+        self.assertEqual(rows[0]["publishedAt"], "2026-11-06T21:00:51Z")
+        self.assertNotIn("content", rows[0])
+        self.assertEqual(rows[0]["sourceKey"], "canadaCyber")
+
+    def test_atom_parser_rejects_off_domain_and_http_links(self):
+        sample = """<feed xmlns="http://www.w3.org/2005/Atom">
+          <entry>
+            <title>Off-domain item</title>
+            <link href="https://cyber.gc.ca.attacker.invalid/item" />
+            <updated>2026-11-06T21:00:51Z</updated>
+          </entry>
+          <entry>
+            <title>Insecure item</title>
+            <link href="http://cyber.gc.ca/en/item" />
+            <updated>2026-11-06T21:00:51Z</updated>
+          </entry>
+        </feed>"""
+        rows = refresh_intel.parse_feed_items(
+            sample, "canadaCyber", "Canadian Cyber Centre", "Alerta",
+            "cyber.gc.ca", 5
+        )
+        self.assertEqual(rows, [])
+
+    def test_eight_official_report_feeds_are_unique_and_https(self):
+        self.assertEqual(len(refresh_intel.REPORT_FEEDS), 8)
+        keys = [entry[0] for entry in refresh_intel.REPORT_FEEDS]
+        self.assertEqual(len(keys), len(set(keys)))
+        for _key, _name, _kind, url, _host in refresh_intel.REPORT_FEEDS:
+            self.assertTrue(url.startswith("https://"))
