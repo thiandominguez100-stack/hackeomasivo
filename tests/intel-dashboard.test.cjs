@@ -112,3 +112,15 @@ test("evidence explorer filters official publications without claiming incidents
   assert.match(app, /publicación oficial; no confirma por sí sola un incidente activo/);
   assert.match(app, /sourceFilter !== "all"/);
 });
+
+
+test("publication history archive is loaded by the interface and documented as metadata-only", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
+  assert.match(html, /reportArchiveStatus/);
+  assert.match(app, /publications-history\.json/);
+  assert.match(app, /historyItems/);
+  assert.match(app, /slice\(0, 100\)/);
+  assert.match(readme, /retención de 365 días/);
+});
