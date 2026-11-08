@@ -189,7 +189,9 @@
     safeText($("reportCount"), items.length + " de " + allItems.length + " publicaciones");
     let rendered = 0;
     if (!items.length) {
-      addText(container, "p", "empty-state", "Todavía no hay investigaciones o avisos disponibles.");
+      addText(container, "p", "empty-state", allItems.length
+        ? "No hay publicaciones que coincidan con esos filtros."
+        : "Todavía no hay investigaciones o avisos disponibles.");
       return;
     }
 
