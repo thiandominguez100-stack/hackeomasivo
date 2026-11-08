@@ -1,4 +1,4 @@
-# NEXUS Cyber Operations Lab v3.3
+# NEXUS Cyber Operations Lab v3.4
 
 Simulador de telemetría cibernética **completamente ficticia**, preparado para GitHub Pages y PWA.
 
