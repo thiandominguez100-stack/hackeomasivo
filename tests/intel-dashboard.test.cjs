@@ -55,9 +55,20 @@ test("research and advisory items are source-linked and contain no raw IP fields
   for (const row of rows) {
     assert.ok(["sansDiary", "cisaAdvisories", "ukNcsc", "certEu", "canadaCyber", "acscAustralia", "certSe", "certUa"].includes(row.sourceKey));
     assert.ok(typeof row.title === "string" && row.title.length > 0);
+    const allowedHosts = {
+      sansDiary: "isc.sans.edu",
+      cisaAdvisories: "cisa.gov",
+      ukNcsc: "ncsc.gov.uk",
+      certEu: "cert.europa.eu",
+      canadaCyber: "cyber.gc.ca",
+      acscAustralia: "cyber.gov.au",
+      certSe: "cert.se",
+      certUa: "cert.gov.ua"
+    };
     const url = new URL(row.url);
     assert.equal(url.protocol, "https:");
-    assert.ok(url.hostname === "isc.sans.edu" || url.hostname === "cisa.gov" || url.hostname.endsWith(".cisa.gov"));
+    const allowedHost = allowedHosts[row.sourceKey];
+    assert.ok(url.hostname === allowedHost || url.hostname.endsWith("." + allowedHost));
     assert.ok(!("ip" in row));
     assert.ok(!("description" in row));
   }
