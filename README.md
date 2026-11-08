@@ -1,4 +1,4 @@
-# NEXUS 4.0 — Global Cyber Threat Observatory
+# NEXUS 4.1 — Global Cyber Threat Observatory
 
 NEXUS dejó de generar tráfico, rutas o eventos ficticios. Ahora presenta un snapshot de fuentes públicas de inteligencia defensiva, actualizado automáticamente mediante GitHub Actions y publicado como JSON estático en GitHub Pages.
 
@@ -7,7 +7,7 @@ NEXUS dejó de generar tráfico, rutas o eventos ficticios. Ahora presenta un sn
 - DShield / SANS Internet Storm Center: totales diarios de reportes, fuentes y destinos observados por sensores; nivel INFOCON; y una muestra limitada de los principales registros de origen de los últimos 30 días.
 - Mapa por país: agrega únicamente los registros de origen destacados que pudieron asociarse a un país de registro de red/ASN. Los círculos se colocan en centroides nacionales aproximados. No se publican las IP originales y no se trazan conexiones hacia víctimas.
 - Historial: evolución de los reportes diarios recibidos por DShield durante los últimos 30 días.
-- CISA KEV: vulnerabilidades cuyo aprovechamiento está confirmado y que aparecen en el catálogo oficial. Se muestran las incorporaciones más recientes.
+- SANS Handler Diary y CISA All Advisories: titulares y fechas de análisis de seguridad, observaciones de sensores y avisos oficiales. Los enlaces abren el artículo original; no se copian instrucciones técnicas.
 - Edificios 3D: se mantiene la cartografía urbana abierta de OpenFreeMap/OpenStreetMap y el inspector de atributos que existan para cada edificio.
 
 ## Actualización y arquitectura
@@ -21,7 +21,8 @@ No hace falta Firebase, servidor propio, clave API ni credenciales. La recolecci
 
 ## Fuentes y límites
 
-- SANS Internet Storm Center / DShield: https://isc.sans.edu/data/ y https://isc.sans.edu/api/
+- SANS Internet Storm Center / DShield: https://isc.sans.edu/data/ , https://isc.sans.edu/api/ y https://isc.sans.edu/rssfeed.xml
+- CISA advisories RSS: https://www.cisa.gov/cybersecurity-advisories/all.xml
 - CISA Known Exploited Vulnerabilities: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 - OpenFreeMap: https://openfreemap.org/
 - OpenStreetMap: https://www.openstreetmap.org/copyright
