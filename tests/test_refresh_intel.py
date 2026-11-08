@@ -21,8 +21,6 @@ class CountryCentroidTests(unittest.TestCase):
         self.assertIsNone(refresh_intel.country_info("ARG"))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
  
 class RssParsingTests(unittest.TestCase):
@@ -52,3 +50,7 @@ class RssParsingTests(unittest.TestCase):
             sample, "sansDiary", "SANS ISC", "Diario", "isc.sans.edu", 8
         )
         self.assertEqual(rows, [])
+
+
+if __name__ == "__main__":
+    unittest.main()
