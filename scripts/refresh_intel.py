@@ -144,7 +144,7 @@ def fetch_dshield() -> dict:
             location = country_info(country_code)
         except (HTTPError, URLError, TimeoutError, ValueError, OSError):
             country_code, location = "", None
-        # Keep the public collector within a conservative request pace.
+            # Keep the public collector within a conservative request pace.
         time.sleep(0.18)
 
         enriched.append({
@@ -212,60 +212,135 @@ def fetch_text(url: str) -> str:
         return response.read().decode("utf-8", errors="replace")
 
 
-def _rss_child_text(element, name: str) -> str:
+def _local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1].rsplit(":", 1)[-1].lower()
+
+
+def _child_text(element, names: set[str]) -> str:
     for child in list(element):
-        if child.tag.rsplit("}", 1)[-1].lower() == name.lower():
-            return "".join(child.itertext()).strip()
+        if _local_name(child.tag) in names:
+            return " ".join("".join(child.itertext()).split())
     return ""
 
 
-def parse_rss_items(xml_text: str, source_key: str, source_name: str, item_kind: str, allowed_host: str, limit: int = 8) -> list[dict]:
+def _feed_date(value: str) -> str:
+    if not value:
+        return ""
+    parsed = None
+    try:
+        parsed = parsedate_to_datetime(value)
+    except (TypeError, ValueError, OverflowError):
+        try:
+            candidate = value.strip().replace("Z", "+00:00")
+            parsed = datetime.fromisoformat(candidate)
+        except (TypeError, ValueError, OverflowError):
+            return ""
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def parse_feed_items(
+    xml_text: str,
+    source_key: str,
+    source_name: str,
+    item_kind: str,
+    allowed_host: str,
+    limit: int = 5,
+) -> list[dict]:
+    """Parse RSS 2.0 and Atom items; retain only safe metadata and official HTTPS links."""
     root = ET.fromstring(xml_text)
     output = []
+
     for item in root.iter():
-        if item.tag.rsplit("}", 1)[-1].lower() != "item":
+        if _local_name(item.tag) not in {"item", "entry"}:
             continue
-        title = " ".join(_rss_child_text(item, "title").split())
-        link = _rss_child_text(item, "link")
-        published = _rss_child_text(item, "pubDate") or _rss_child_text(item, "published")
+
+        title = _child_text(item, {"title"})
+        published = _child_text(item, {"pubdate", "published", "updated", "date"})
+        link = ""
+
+        link_nodes = [child for child in list(item) if _local_name(child.tag) == "link"]
+        # Atom feeds use link href attributes; RSS feeds generally use link text.
+        for node in link_nodes:
+            candidate = (node.attrib.get("href") or "").strip()
+            rel = (node.attrib.get("rel") or "alternate").lower()
+            if candidate and rel in {"alternate", ""}:
+                link = candidate
+                break
+        if not link:
+            link = _child_text(item, {"link"})
+
         if not title or not link:
             continue
+
         try:
             parsed = urlparse(link)
             host = (parsed.hostname or "").lower()
-            if parsed.scheme != "https" or not (host == allowed_host or host.endswith("." + allowed_host)):
+            if parsed.scheme != "https" or not (
+                host == allowed_host or host.endswith("." + allowed_host)
+            ):
                 continue
-            published_at = parsedate_to_datetime(published).astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-        except (TypeError, ValueError, OverflowError):
-            published_at = ""
+        except ValueError:
+            continue
+
         output.append({
             "sourceKey": source_key,
             "sourceName": source_name,
             "kind": item_kind,
             "title": title[:240],
             "url": link,
-            "publishedAt": published_at,
+            "publishedAt": _feed_date(published),
         })
+
     output.sort(key=lambda row: row["publishedAt"], reverse=True)
     return output[:limit]
 
 
+# Backwards-compatible name used by the original RSS parser tests.
+def parse_rss_items(
+    xml_text: str,
+    source_key: str,
+    source_name: str,
+    item_kind: str,
+    allowed_host: str,
+    limit: int = 5,
+) -> list[dict]:
+    return parse_feed_items(xml_text, source_key, source_name, item_kind, allowed_host, limit)
+
+
+REPORT_FEEDS = [
+    ("sansDiary", "SANS ISC", "Diario de investigación", "https://isc.sans.edu/rssfeed.xml", "isc.sans.edu"),
+    ("cisaAdvisories", "CISA", "Aviso de seguridad", "https://www.cisa.gov/cybersecurity-advisories/all.xml", "cisa.gov"),
+    ("ukNcsc", "UK National Cyber Security Centre", "Aviso y guía de seguridad", "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml", "ncsc.gov.uk"),
+    ("certEu", "CERT-EU", "Aviso de seguridad europeo", "https://cert.europa.eu/publications/security-advisories-rss", "cert.europa.eu"),
+    ("canadaCyber", "Canadian Centre for Cyber Security", "Alerta y advisory", "https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en", "cyber.gc.ca"),
+    ("acscAustralia", "Australian Cyber Security Centre", "Alerta de seguridad", "https://www.cyber.gov.au/rss/alerts", "cyber.gov.au"),
+    ("certSe", "CERT-SE Sweden", "Aviso de seguridad", "https://www.cert.se/feed/rss.xml", "cert.se"),
+    ("certUa", "CERT-UA Ukraine", "Análisis de amenazas", "https://cert.gov.ua/api/articles/rss", "cert.gov.ua"),
+]
+
+
 def fetch_reports(previous: dict) -> dict:
-    sources = [
-        ("sansDiary", "SANS ISC", "Diario de investigación", "https://isc.sans.edu/rssfeed.xml", "isc.sans.edu"),
-        ("cisaAdvisories", "CISA", "Aviso de seguridad", "https://www.cisa.gov/cybersecurity-advisories/all.xml", "cisa.gov"),
-    ]
     previous_feed = ((previous.get("feeds") or {}).get("reports") or {})
     previous_items = previous_feed.get("items", []) if isinstance(previous_feed, dict) else []
+    previous_states = previous_feed.get("sourceStates", {}) if isinstance(previous_feed, dict) else {}
     combined = []
     source_states = {}
     successes = 0
 
-    for key, name, kind, url, host in sources:
+    for key, name, kind, url, host in REPORT_FEEDS:
         try:
-            items = parse_rss_items(fetch_text(url), key, name, kind, host, limit=8)
+            items = parse_feed_items(
+                fetch_text(url), key, name, kind, host, limit=5
+            )
             combined.extend(items)
-            source_states[key] = {"status": "ok", "itemCount": len(items), "sourceUrl": url}
+            source_states[key] = {
+                "status": "ok",
+                "itemCount": len(items),
+                "sourceUrl": url,
+                "lastSuccessfulAt": iso_now(),
+            }
             successes += 1
         except Exception as error:
             retained = [
@@ -273,18 +348,29 @@ def fetch_reports(previous: dict) -> dict:
                 if isinstance(row, dict) and row.get("sourceKey") == key
                 and row.get("url")
             ]
-            combined.extend(retained)
+            old_state = previous_states.get(key, {}) if isinstance(previous_states, dict) else {}
+            combined.extend(retained[:5])
             source_states[key] = {
                 "status": "stale" if retained else "error",
-                "itemCount": len(retained),
+                "itemCount": len(retained[:5]),
                 "sourceUrl": url,
+                "lastSuccessfulAt": old_state.get("lastSuccessfulAt"),
                 "lastError": type(error).__name__,
             }
 
-    combined.sort(key=lambda row: row.get("publishedAt") or "", reverse=True)
-    if successes == len(sources):
+    # De-duplicate the same advisory syndicated by multiple national CERTs.
+    deduplicated = []
+    seen = set()
+    for row in sorted(combined, key=lambda item: item.get("publishedAt") or "", reverse=True):
+        identity = (row.get("sourceKey"), row.get("url"))
+        if identity in seen:
+            continue
+        seen.add(identity)
+        deduplicated.append(row)
+
+    if successes == len(REPORT_FEEDS):
         status = "ok"
-    elif combined:
+    elif successes or deduplicated:
         status = "stale"
     else:
         status = "error"
@@ -293,9 +379,11 @@ def fetch_reports(previous: dict) -> dict:
     return {
         "status": status,
         "lastSuccessfulAt": iso_now() if successes else old_success,
+        "sourceCount": len(REPORT_FEEDS),
+        "successfulSources": successes,
         "sourceStates": source_states,
-        "items": combined[:16],
-        "description": "Titulares y fechas de diarios de investigación SANS ISC y avisos oficiales CISA. Abrir la fuente para leer el contexto; no todos los artículos describen un ataque confirmado ni actividad todavía activa.",
+        "items": deduplicated[:32],
+        "description": "Titulares, fechas y enlaces originales de ocho canales públicos de CERT y organismos oficiales: SANS ISC, CISA, UK NCSC, CERT-EU, Canadian Cyber Centre, Australian ACSC, CERT-SE y CERT-UA. No se copian indicadores ni instrucciones técnicas; los títulos pueden conservar el idioma original.",
     }
 
 def fetch_cisa() -> dict:
