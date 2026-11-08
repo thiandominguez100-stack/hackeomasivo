@@ -178,7 +178,15 @@
   function renderReports(reports) {
     const container = $("reportsList");
     container.replaceChildren();
-    const items = Array.isArray(reports && reports.items) ? reports.items.slice(0, 32) : [];
+    const allItems = Array.isArray(reports && reports.items) ? reports.items.slice(0, 32) : [];
+    const query = (($("reportSearch") && $("reportSearch").value) || "").trim().toLocaleLowerCase("es");
+    const sourceFilter = ($("reportSourceFilter") && $("reportSourceFilter").value) || "all";
+    const items = allItems.filter((item) => {
+      if (sourceFilter !== "all" && item.sourceKey !== sourceFilter) return false;
+      const haystack = [item.title, item.sourceName, item.kind].filter(Boolean).join(" ").toLocaleLowerCase("es");
+      return !query || haystack.includes(query);
+    });
+    safeText($("reportCount"), items.length + " de " + allItems.length + " publicaciones");
     let rendered = 0;
     if (!items.length) {
       addText(container, "p", "empty-state", "Todavía no hay investigaciones o avisos disponibles.");
@@ -209,13 +217,15 @@
       link.rel = "noopener noreferrer";
       link.textContent = item.title;
 
-      addText(card, "p", "report-kind", source.kind + " · título en idioma original");
+      addText(card, "p", "report-kind", (item.kind || source.kind) + " · publicación oficial; no confirma por sí sola un incidente activo");
       card.append(meta, link);
       container.appendChild(card);
       rendered += 1;
     });
 
-    if (!rendered) addText(container, "p", "empty-state", "No hay publicaciones válidas de las fuentes autorizadas.");
+    if (!rendered) addText(container, "p", "empty-state", query || sourceFilter !== "all"
+      ? "No hay publicaciones que coincidan con esos filtros."
+      : "No hay publicaciones válidas de las fuentes autorizadas.");
   }
 
   function renderReportSourceHealth(reports) {
@@ -394,14 +404,14 @@
       map.setProjection({ type: "globe" });
       map.addSource("nexus-country-observations", { type: "geojson", data: emptyCollection() });
       map.addLayer({
-        id: "nexus-country-glow", type: "circle", source: "nexus-country-observations",
+        id: "nexus-country-glow", type: "circle", source: "nexus-country-observations", maxzoom: 5.2,
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["get", "reports"], 0, 8, 10000, 14, 100000, 22, 1000000, 31],
           "circle-color": "#f6a84f", "circle-opacity": 0.16, "circle-blur": 0.8
         }
       });
       map.addLayer({
-        id: "nexus-country-points", type: "circle", source: "nexus-country-observations",
+        id: "nexus-country-points", type: "circle", source: "nexus-country-observations", maxzoom: 5.2,
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["get", "reports"], 0, 3.5, 10000, 5, 100000, 7.5, 1000000, 10],
           "circle-color": ["interpolate", ["linear"], ["get", "reports"], 0, "#f5ca76", 100000, "#f59b53", 1000000, "#ff684e"],
@@ -416,7 +426,7 @@
           ["Registros de origen en la muestra", fmt(p.sourceRecords)],
           ["Reportes asociados", fmt(p.reports)],
           ["Última observación", p.latestSeen || "No disponible"]
-        ], "País basado en el registro de red/ASN y centroide aproximado. No representa ubicación de víctimas ni de personas.");
+        ], "Centroide nacional basado en el registro de red/ASN. No indica dónde ocurrió un incidente ni la ubicación de una víctima. El marcador se oculta al acercar el zoom.");
         new maplibregl.Popup({ closeButton: true, maxWidth: "310px" })
           .setLngLat(event.lngLat).setDOMContent(node).addTo(map);
       });
@@ -460,9 +470,18 @@
       }
       $("buildingToggle").disabled = !hasBuildings;
       $("buildingToggle").checked = hasBuildings;
-      safeText($("mapStatus"), hasBuildings
-        ? "Globo activo · acercá a zoom 15+ y seleccioná una huella"
-        : "Globo activo · edificios no disponibles en esta capa");
+      const updateMapScaleNotice = () => {
+        const zoom = map.getZoom();
+        if (zoom > 5.2) {
+          safeText($("mapStatus"), "Zoom local · marcadores nacionales ocultos para evitar falsas ubicaciones");
+        } else {
+          safeText($("mapStatus"), hasBuildings
+            ? "Vista global · marcadores por país (centroides) · edificios desde zoom 15+"
+            : "Vista global · marcadores por país (centroides) · edificios no disponibles");
+        }
+      };
+      map.on("zoomend", updateMapScaleNotice);
+      updateMapScaleNotice();
       safeText($("rendererStatus"), "MapLibre GL · WebGL");
       mapReady = true;
       updateMap(latest && latest.feeds ? latest.feeds.dshield : null);
@@ -536,6 +555,11 @@
   function updateClock() {
     safeText($("clock"), new Date().toLocaleTimeString("en-GB", { timeZone: "UTC", hour12: false }) + " UTC");
   }
+
+  const reportSearch = $("reportSearch");
+  const reportSourceFilter = $("reportSourceFilter");
+  if (reportSearch) reportSearch.addEventListener("input", () => renderReports(latest && latest.feeds ? latest.feeds.reports : {}));
+  if (reportSourceFilter) reportSourceFilter.addEventListener("change", () => renderReports(latest && latest.feeds ? latest.feeds.reports : {}));
 
   initMap();
   updateClock();
