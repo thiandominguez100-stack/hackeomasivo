@@ -20,6 +20,7 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "current.json"
+HISTORY_OUT = ROOT / "data" / "publications-history.json"
 USER_AGENT = (
     "Mozilla/5.0 (compatible; NEXUS-Global-Cyber-Observatory/4.3; "
     "+https://github.com/thiandominguez100-stack/hackeomasivo)"
@@ -399,6 +400,73 @@ def fetch_reports(previous: dict) -> dict:
         "description": "Titulares, fechas y enlaces originales de ocho canales públicos de CERT y organismos oficiales: SANS ISC, CISA, UK NCSC, CERT-EU, Canadian Cyber Centre, Australian ACSC, CERT-SE y CERT-UA. No se copian indicadores ni instrucciones técnicas; los títulos pueden conservar el idioma original.",
     }
 
+def update_publication_history(reports: dict) -> dict:
+    """Maintain a bounded, metadata-only archive of official publication records."""
+    previous = {}
+    try:
+        previous = json.loads(HISTORY_OUT.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        previous = {}
+
+    allowed_hosts = {key: host for key, _name, _kind, _url, host in REPORT_FEEDS}
+    combined = []
+    old_items = previous.get("items", []) if isinstance(previous, dict) else []
+    new_items = reports.get("items", []) if isinstance(reports, dict) else []
+
+    for row in list(old_items) + list(new_items):
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get("sourceKey") or "")
+        host_allowed = allowed_hosts.get(key)
+        if not host_allowed:
+            continue
+        try:
+            parsed = urlparse(str(row.get("url") or ""))
+            host = (parsed.hostname or "").lower()
+            if parsed.scheme != "https" or not (host == host_allowed or host.endswith("." + host_allowed)):
+                continue
+        except ValueError:
+            continue
+
+        published = _feed_date(str(row.get("publishedAt") or ""))
+        if published:
+            try:
+                published_dt = datetime.fromisoformat(published.replace("Z", "+00:00"))
+                if published_dt < utc_now() - timedelta(days=365):
+                    continue
+            except ValueError:
+                published = ""
+        combined.append({
+            "sourceKey": key,
+            "sourceName": str(row.get("sourceName") or "")[:120],
+            "kind": str(row.get("kind") or "")[:120],
+            "title": str(row.get("title") or "")[:240],
+            "url": parsed.geturl(),
+            "publishedAt": published,
+        })
+
+    unique = {}
+    for row in combined:
+        unique[row["url"]] = row
+    items = sorted(
+        unique.values(),
+        key=lambda row: row.get("publishedAt") or "",
+        reverse=True,
+    )[:2000]
+
+    archive = {
+        "schemaVersion": 1,
+        "generatedAt": iso_now(),
+        "retentionDays": 365,
+        "itemCount": len(items),
+        "items": items,
+        "description": "Archivo histórico de metadatos de publicaciones oficiales. No es un registro exhaustivo de incidentes confirmados.",
+    }
+    HISTORY_OUT.parent.mkdir(parents=True, exist_ok=True)
+    HISTORY_OUT.write_text(json.dumps(archive, ensure_ascii=False, separators=(",", ":")) + "\\n", encoding="utf-8")
+    return archive
+
+
 def fetch_cisa() -> dict:
     url = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     catalog = fetch_json(url)
@@ -466,6 +534,12 @@ def main() -> None:
     except Exception as error:
         print(f"Reports refresh failed: {type(error).__name__}")
         feeds["reports"] = preserve_or_error(previous, "reports", error)
+
+    try:
+        archive = update_publication_history(feeds["reports"])
+        print(f"Publication history retained: {archive['itemCount']} records.")
+    except Exception as error:
+        print(f"Publication history update failed: {type(error).__name__}")
 
     try:
         feeds["cisaKev"] = fetch_cisa()
