@@ -164,6 +164,43 @@
     });
   }
 
+  function renderReports(reports) {
+    const container = $("reportsList");
+    container.replaceChildren();
+    const items = Array.isArray(reports && reports.items) ? reports.items.slice(0, 16) : [];
+    if (!items.length) {
+      addText(container, "p", "empty-state", "Todavía no hay investigaciones o avisos disponibles.");
+      return;
+    }
+    items.forEach((item) => {
+      const host = (() => {
+        try { return new URL(item.url).hostname.toLowerCase(); }
+        catch { return ""; }
+      })();
+      const isSans = item.sourceKey === "sansDiary" && host === "isc.sans.edu";
+      const isCisa = item.sourceKey === "cisaAdvisories" && (host === "cisa.gov" || host.endsWith(".cisa.gov"));
+      if (!item.title || (!isSans && !isCisa)) return;
+
+      const card = document.createElement("article");
+      card.className = "report-card";
+      const meta = document.createElement("div");
+      meta.className = "report-meta";
+      addText(meta, "span", isSans ? "report-source sans" : "report-source cisa",
+        isSans ? "SANS ISC · DIARIO" : "CISA · AVISO");
+      addText(meta, "time", "", item.publishedAt ? dateLabel(item.publishedAt) : "Fecha no disponible");
+      const link = document.createElement("a");
+      link.href = item.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = item.title;
+      addText(card, "p", "report-kind", isSans
+        ? "Observación e investigación de seguridad"
+        : "Publicación oficial de ciberseguridad");
+      card.append(meta, link);
+      container.appendChild(card);
+    });
+  }
+
   function renderKev(cisa) {
     const grid = $("kevList");
     grid.replaceChildren();
@@ -207,7 +244,15 @@
       cisa.status === "stale" ? "Sin conexión actual · última lectura " + ageLabel(cisa.lastSuccessfulAt) :
       "No hay una lectura válida todavía", cisa.lastSuccessfulAt);
 
-    const successful = [dshield, cisa].filter((feed) => feed.status === "ok");
+    const reports = feeds.reports || {};
+    const reportStates = reports.sourceStates || {};
+    const sansStatus = (reportStates.sansDiary || {}).status || "pending";
+    const cisaStatus = (reportStates.cisaAdvisories || {}).status || "pending";
+    const reportInfo = "SANS: " + sansStatus.toUpperCase() + " · CISA: " + cisaStatus.toUpperCase() +
+      " · " + ((reports.items || []).length) + " publicaciones";
+    setFeedState("reportsState", "reportsInfo", reports.status, reportInfo, reports.lastSuccessfulAt);
+
+    const successful = [dshield, cisa, reports].filter((feed) => feed.status === "ok");
     const stale = [dshield, cisa].filter((feed) => feed.status === "stale");
     if (successful.length === 2) setPill("online", "Fuentes actualizadas");
     else if (successful.length || stale.length) setPill("degraded", "Datos parciales / anteriores");
@@ -409,6 +454,7 @@
     const cisa = data.feeds.cisaKev || {};
     renderMetrics(dshield, cisa);
     renderSourceHealth(data);
+    renderReports(data.feeds.reports || {});
     renderHistory(dshield);
     renderCountries(dshield);
     renderSources(dshield);
