@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111b">
   <meta name="description" content="NEXUS: observatorio de inteligencia defensiva con DShield, CISA y ocho canales de CERT nacionales e internacionales.">
-  <title>NEXUS 4.3 — Global Cyber Threat Observatory</title>
+  <title>NEXUS 5.0 — Evidence & Incident Intelligence</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/favicon.svg">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=12">
+  <link rel="stylesheet" href="./styles.css?v=13">
 </head>
 <body>
 <div class="shell">
@@ -24,7 +24,7 @@
 
   <section class="hero">
     <div>
-      <label class="eyebrow">THREAT INTELLIGENCE · BUILD 4.3</label>
+      <label class="eyebrow">THREAT INTELLIGENCE · BUILD 5.0</label>
       <h1>Global <em>Cyber Threat</em> Observatory</h1>
       <p>Datos públicos de seguridad, actividad observada por sensores e incidentes documentados.</p>
     </div>
@@ -71,16 +71,16 @@
   <section class="workspace">
     <div class="panel map-panel">
       <div class="panel-head">
-        <div><label>GEOSPATIAL INTELLIGENCE</label><h2>Globo de actividad observada</h2></div>
+        <div><label>GEOSPATIAL INTELLIGENCE</label><h2>Observaciones agregadas por país</h2></div>
         <div class="map-head-controls">
           <label class="building-toggle"><input id="buildingToggle" type="checkbox" checked> EDIFICIOS 3D</label>
           <button id="resetView" class="icon-button" title="Restablecer vista del globo">⌖</button>
         </div>
       </div>
-      <div class="map-annotation"><span class="legend-circle"></span> País del registro de red · ubicación aproximada · no es la ubicación de una persona</div>
-      <div id="map" role="img" aria-label="Globo 3D con marcadores agregados de actividad de sensores por país"></div>
+      <div class="map-annotation"><span class="legend-circle"></span> CENTROIDES NACIONALES · país de registro de red/ASN · no ubican incidentes, víctimas ni dispositivos</div>
+      <div id="map" role="img" aria-label="Globo 3D con marcadores agregados por país; los centroides no son ubicaciones de incidentes"></div>
       <div class="map-tools">
-        <label for="cityJump">EXPLORAR CIUDAD</label>
+        <label for="cityJump">EXPLORAR CARTOGRAFÍA</label>
         <select id="cityJump">
           <option value="">Seleccionar ciudad…</option>
           <option value="Buenos Aires">Buenos Aires</option><option value="São Paulo">São Paulo</option>
@@ -92,7 +92,7 @@
         </select>
         <span id="mapStatus">Cargando cartografía…</span>
       </div>
-      <div class="map-foot"><span>DATOS AGREGADOS · SIN RUTAS NI CONEXIONES INVENTADAS</span><span>ZOOM · ROTAR · INSPECCIONAR EDIFICIOS</span></div>
+      <div class="map-foot"><span>AGREGADOS NACIONALES · SIN UBICACIONES DE INCIDENTES</span><span>ZOOM LOCAL · SOLO CARTOGRAFÍA Y EDIFICIOS</span></div>
     </div>
 
     <aside class="side-column">
@@ -135,6 +135,49 @@
     <p class="source-caption">Titulares, fechas y enlaces originales de ocho canales oficiales. Los títulos pueden conservar el idioma original. Un aviso no demuestra que un ataque siga activo; consultá siempre el contexto del organismo emisor.</p>
   </section>
 
+  <section class="panel incidents-panel" aria-labelledby="incidentHeading">
+    <div class="panel-head">
+      <div><label>INCIDENT INTELLIGENCE · REGISTRO CURADO</label><h2 id="incidentHeading">Explorador de incidentes documentados</h2></div>
+      <span class="subtag">FUENTES ATRIBUIDAS</span>
+    </div>
+    <div class="incident-stats" aria-label="Resumen del registro de incidentes">
+      <article><small>REGISTROS VÁLIDOS</small><b id="incidentTotal">—</b></article>
+      <article><small>EN INVESTIGACIÓN*</small><b id="incidentInvestigating">—</b></article>
+      <article><small>RESUELTOS*</small><b id="incidentResolved">—</b></article>
+      <article><small>ATRIBUIDOS A MEDIOS</small><b id="incidentMedia">—</b></article>
+    </div>
+    <div class="incident-controls">
+      <label class="sr-only" for="incidentSearch">Buscar incidentes</label>
+      <input id="incidentSearch" type="search" placeholder="Buscar organización, región o descripción…" autocomplete="off">
+      <label class="sr-only" for="incidentCategory">Categoría</label>
+      <select id="incidentCategory">
+        <option value="">Todas las categorías</option>
+        <option value="cyber-incident">Incidente cibernético</option>
+        <option value="ransomware">Ransomware</option>
+        <option value="service-disruption">Interrupción de servicio</option>
+      </select>
+      <label class="sr-only" for="incidentCountry">País</label>
+      <select id="incidentCountry"><option value="">Todos los países</option></select>
+      <label class="sr-only" for="incidentStatus">Estado</label>
+      <select id="incidentStatus">
+        <option value="">Todos los estados</option>
+        <option value="investigating">En investigación</option>
+        <option value="resolved">Resuelto</option>
+        <option value="unknown">No informado</option>
+      </select>
+      <label class="sr-only" for="incidentVerification">Verificación</label>
+      <select id="incidentVerification">
+        <option value="">Todas las verificaciones</option>
+        <option value="official">Fuente oficial</option>
+        <option value="media-attributed">Medio con atribución</option>
+      </select>
+    </div>
+    <p id="incidentNotice" class="incident-notice" role="status" aria-live="polite">Cargando el registro curado. No es una lista exhaustiva ni en tiempo real.</p>
+    <div id="incidentList" class="incident-grid"><p class="empty-state">Cargando incidentes documentados…</p></div>
+    <div id="incidentResultsCount" class="incident-results-count" aria-live="polite"></div>
+    <p class="source-caption">*El estado es el publicado por la fuente en la fecha indicada, no una comprobación del estado actual. Los impactos no evaluados se muestran como desconocidos. Ninguna ficha se convierte en un punto exacto del mapa.</p>
+  </section>
+
   <section class="panel kev-panel">
     <div class="panel-head"><div><label>CONFIRMED EXPLOITATION CATALOGUE</label><h2>Vulnerabilidades explotadas conocidas</h2></div><a class="text-link" href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener noreferrer">Catálogo oficial CISA ↗</a></div>
     <div id="kevList" class="kev-grid"><p class="empty-state">Esperando catálogo CISA…</p></div>
@@ -143,7 +186,7 @@
   <section class="bottom-grid">
     <div class="panel">
       <label>METODOLOGÍA</label><h2>Cómo leer este observatorio</h2>
-      <p>Los círculos del globo agregan registros de origen por país. El país corresponde al registro de la red o ASN y se sitúa en un centroide aproximado; no localiza a una persona, un dispositivo ni una víctima. Los reportes de DShield son observaciones compartidas por sensores y pueden contener actividad de investigación o falsos positivos.</p>
+      <p>Los círculos del globo agregan registros de origen por país y se colocan en un centroide nacional aproximado. No representan la ubicación de un ataque, una víctima, un dispositivo ni una persona. Se desvanecen y desaparecen al acercar el zoom local; el selector de ciudades solo explora cartografía y edificios.</p>
       <p>El catálogo KEV de CISA identifica vulnerabilidades cuya explotación se conoce. Una entrada no significa que se haya producido un nuevo ataque en ese instante. Ninguno de estos feeds cubre todos los incidentes de Internet.</p>
     </div>
     <div class="panel">
@@ -159,11 +202,12 @@
   </section>
 
   <footer>
-    <span>NEXUS · GLOBAL CYBER THREAT OBSERVATORY · BUILD 4.0</span>
+    <span>NEXUS · EVIDENCE & INCIDENT INTELLIGENCE · BUILD 5.0</span>
     <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></span>
   </footer>
 </div>
 <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
-<script src="./app.js?v=12"></script>
+<script src="./incidents.js?v=13"></script>
+<script src="./app.js?v=13"></script>
 </body>
 </html>
