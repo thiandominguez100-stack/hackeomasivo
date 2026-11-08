@@ -39,3 +39,12 @@ test("no generated simulation events or fake route fields are present", () => {
   assert.ok(!("routes" in (snapshot.feeds.dshield || {})));
   assert.ok(!("fakeEvents" in snapshot));
 });
+
+test("published page is an observatory and does not load the old simulator", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  assert.match(html, /BUILD 4\.0/);
+  assert.match(html, /DShield/);
+  assert.match(html, /CISA/);
+  assert.doesNotMatch(html, /simulation\.js/);
+  assert.doesNotMatch(html, /SIMULATION ENGINE|GLOBAL ROUTE ENGINE|RUTAS SINTÉTICAS/);
+});
