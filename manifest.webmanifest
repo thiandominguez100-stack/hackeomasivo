@@ -2,7 +2,7 @@
   "id": "./",
   "name": "NEXUS Global Cyber Threat Observatory",
   "short_name": "NEXUS",
-  "description": "Observatorio de inteligencia de amenazas basado en datos públicos de DShield y CISA.",
+  "description": "Observatorio de inteligencia de amenazas con estadísticas DShield, diarios SANS, avisos CISA y catálogo KEV.",
   "lang": "es-AR",
   "start_url": "./",
   "scope": "./",
