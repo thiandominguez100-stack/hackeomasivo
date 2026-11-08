@@ -1,1 +1,21 @@
-{"id":"./","name":"NEXUS Cyber Operations Lab","short_name":"NEXUS","description":"Simulador visual de telemetría ficticia.","lang":"es-AR","start_url":"./","scope":"./","display":"standalone","orientation":"any","background_color":"#07111b","theme_color":"#07111b","icons":[{"src":"./assets/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}
+{
+  "id": "./",
+  "name": "NEXUS Global Cyber Threat Observatory",
+  "short_name": "NEXUS",
+  "description": "Observatorio de inteligencia de amenazas basado en datos públicos de DShield y CISA.",
+  "lang": "es-AR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07111b",
+  "theme_color": "#07111b",
+  "icons": [
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
