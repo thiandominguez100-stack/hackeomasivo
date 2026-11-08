@@ -1,48 +1,56 @@
-# NEXUS 4.2 — Global Cyber Threat Observatory
+# NEXUS 4.3 — Global Cyber Threat Observatory
 
-NEXUS dejó de generar tráfico, rutas o eventos ficticios. Ahora presenta un snapshot de fuentes públicas de inteligencia defensiva, actualizado automáticamente mediante GitHub Actions y publicado como JSON estático en GitHub Pages.
+NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
-## Qué muestra
+## Cobertura de datos
 
-- DShield / SANS Internet Storm Center: totales diarios de reportes, fuentes y destinos observados por sensores; nivel INFOCON; y una muestra limitada de los principales registros de origen de los últimos 30 días.
-- Mapa por país: agrega únicamente los registros de origen destacados que pudieron asociarse a un país de registro de red/ASN. Los círculos se colocan en centroides nacionales aproximados. No se publican las IP originales y no se trazan conexiones hacia víctimas.
-- Historial: evolución de los reportes diarios recibidos por DShield durante los últimos 30 días.
-- SANS Handler Diary y CISA All Advisories: titulares y fechas de análisis de seguridad, observaciones de sensores y avisos oficiales. Los enlaces abren el artículo original; no se copian instrucciones técnicas.
-- Edificios 3D: se mantiene la cartografía urbana abierta de OpenFreeMap/OpenStreetMap y el inspector de atributos que existan para cada edificio.
+### Telemetría agregada
+- **DShield / SANS Internet Storm Center:** reportes diarios, fuentes y destinos observados por su red de sensores; historial de 30 días; nivel INFOCON.
+- **Mapa por país:** agrega una muestra acotada de los principales registros que DShield comparte. Los círculos usan el país de registro de la red/ASN y un centroide aproximado. Las direcciones IP originales no se publican.
+
+### Vulnerabilidades explotadas conocidas
+- **CISA KEV:** catálogo oficial de vulnerabilidades con evidencia de explotación conocida. NEXUS muestra las incorporaciones más recientes y enlaces a NVD.
+
+### Ocho canales públicos de investigación y avisos
+1. SANS ISC — diario de investigación y observaciones de sensores: https://isc.sans.edu/rssfeed.xml
+2. CISA — avisos oficiales: https://www.cisa.gov/cybersecurity-advisories/all.xml
+3. UK National Cyber Security Centre — informes, noticias y guías: https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml
+4. CERT-EU — avisos de seguridad para instituciones de la Unión Europea: https://cert.europa.eu/publications/security-advisories-rss
+5. Canadian Centre for Cyber Security — alertas y advisories: https://www.cyber.gc.ca/api/cccs/atom/v1/get?feed=alerts_advisories&lang=en
+6. Australian Cyber Security Centre — alertas: https://www.cyber.gov.au/rss/alerts
+7. CERT-SE Sweden — avisos e información de incidentes: https://www.cert.se/feed/rss.xml
+8. CERT-UA Ukraine — análisis e informes de amenazas: https://cert.gov.ua/api/articles/rss
+
+NEXUS conserva títulos, fuente, fecha y enlace oficial. No copia cuerpos de artículos, indicadores de compromiso, direcciones IP, muestras de malware ni instrucciones técnicas. Algunos titulares están en su idioma original.
 
 ## Actualización y arquitectura
 
-1. GitHub Actions ejecuta scripts/refresh_intel.py una vez por hora (y también al añadir o actualizar el colector; se puede ejecutar manualmente desde Actions).
-2. El colector consulta únicamente las APIs públicas de lectura de DShield y el JSON oficial de CISA.
-3. Se genera data/current.json, que GitHub Pages sirve como archivo estático.
-4. La interfaz consulta ese archivo cada 60 segundos. La frecuencia real de datos depende de las fuentes y del horario de recolección: no es telemetría segundo a segundo.
+1. GitHub Actions ejecuta `scripts/refresh_intel.py` una vez por hora; también puede ejecutarse manualmente desde Actions.
+2. El recolector consulta APIs y feeds públicos de solo lectura.
+3. Se genera `data/current.json`, que GitHub Pages sirve como archivo estático.
+4. La interfaz consulta ese archivo cada 60 segundos. El reloj y los indicadores de antigüedad se actualizan cada segundo.
 
-No hace falta Firebase, servidor propio, clave API ni credenciales. La recolección se ejecuta en GitHub Actions, no en el navegador del visitante.
+No hace falta Firebase, servidor propio, claves API ni credenciales para estas fuentes. La recolección se ejecuta en GitHub Actions, no en el navegador del visitante.
 
-## Fuentes y límites
+## Cómo interpretar los datos
 
-- SANS Internet Storm Center / DShield: https://isc.sans.edu/data/ , https://isc.sans.edu/api/ y https://isc.sans.edu/rssfeed.xml
-- CISA advisories RSS: https://www.cisa.gov/cybersecurity-advisories/all.xml
-- CISA Known Exploited Vulnerabilities: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
-- OpenFreeMap: https://openfreemap.org/
-- OpenStreetMap: https://www.openstreetmap.org/copyright
+- Los reportes de DShield son observaciones enviadas por sensores participantes. No equivalen automáticamente a delitos ni a ataques confirmados; puede haber escáneres de investigación, infraestructura compartida o falsos positivos.
+- El país del mapa corresponde al registro de una red/ASN y se coloca en un centroide aproximado. No identifica la ubicación física de una persona, un dispositivo, una víctima ni un atacante.
+- CISA KEV es un catálogo de vulnerabilidades explotadas conocidas, no una secuencia de ataques en directo.
+- Un aviso de un CERT puede ser una recomendación, investigación o alerta histórica; no prueba que un incidente continúe activo.
+- Los canales públicos no cubren todos los incidentes de Internet y sus frecuencias de publicación varían. NEXUS no ofrece visibilidad global segundo a segundo.
+- Si una fuente falla, se conserva su última lectura válida y se marca como anterior. No se generan datos sintéticos para completar huecos.
 
-Interpretación correcta de los datos:
-- Los reportes de DShield son observaciones comunicadas por sensores participantes. No equivalen automáticamente a delitos ni a ataques confirmados. Puede haber escáneres de investigación, infraestructura compartida y falsos positivos.
-- El país se obtiene del registro de la red/ASN y se muestra como agregado. No identifica la ubicación física exacta de una persona, computadora, víctima ni edificio.
-- CISA KEV registra vulnerabilidades con explotación conocida; no es un feed de incidentes en directo.
-- Ninguna fuente pública cubre todos los ataques de Internet. NEXUS muestra solo las observaciones que sus proveedores comparten.
-- Si una fuente deja de responder, NEXUS conserva la última lectura válida y la marca como anterior; nunca rellena los huecos con eventos sintéticos.
+## Pruebas
 
-SANS ISC solicita atribución y publica condiciones de uso para sus datos. NEXUS enlaza y atribuye la fuente en la interfaz y no redistribuye los datos como un producto comercial.
+- `python scripts/refresh_intel.py`
+- `python -m py_compile scripts/refresh_intel.py`
+- `python -m unittest discover -s tests -p "test_*.py"`
+- `node --test tests/intel-dashboard.test.cjs`
+- `node --check app.js`
 
-## Desarrollo y pruebas
+## Publicación
 
-- Colector: python scripts/refresh_intel.py
-- Pruebas Node: node --test tests/intel-dashboard.test.cjs
-- Pruebas Python: python -m unittest discover -s tests -p test_*.py
-- Sintaxis del colector: python -m py_compile scripts/refresh_intel.py
-
-GitHub Pages: Settings → Pages → Deploy from a branch → main → /(root).
+GitHub Pages: Settings → Pages → Deploy from a branch → `main` → `/(root)`.
 
 URL: https://thiandominguez100-stack.github.io/hackeomasivo/
