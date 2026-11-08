@@ -1,7 +1,6 @@
 {
   "schemaVersion": 1,
   "curation": "human-verified-public-records",
-  "generatedAt": "2026-11-08T00:00:00Z",
   "items": [
     {
       "id": "US-NATIONAL-BNC-2026",
@@ -21,9 +20,9 @@
       "impactNote": "Impacto operativo alto por la interrupción nacional de servicios de notificación judicial. Esta valoración describe el alcance del servicio, no la gravedad técnica del acceso no autorizado.",
       "verificationLevel": "official",
       "summary": "El Poder Judicial de Estados Unidos informó que un incidente de ciberseguridad afectó los sistemas del proveedor que opera el centro de notificaciones. El servicio fue restablecido según la actualización oficial del 27 de octubre. No se infiere una ubicación física ni se atribuye el incidente a un actor.",
-      "sourceName": "U.S. Courts",
+      "sourceName": "U.S. Bankruptcy Court · District of Kansas",
       "sourceHost": "uscourts.gov",
-      "sourceUrl": "https://www.uscourts.gov/data-news/judiciary-news/2026/10/15/update-bankruptcy-noticing-center-access-restored"
+      "sourceUrl": "https://www.ksb.uscourts.gov/bnc-service-disruption"
     },
     {
       "id": "US-NE-LINCOLN-NORTH-PLATTE-2026",
@@ -37,12 +36,12 @@
       "eventEnd": null,
       "disclosedAt": "2026-10-09",
       "category": "cyber-incident",
-      "status": "investigating",
+      "status": "unknown",
       "statusAsOf": "2026-10-09",
       "impactLevel": "unassessed",
-      "impactNote": "La publicación de emergencia no especificó el tipo técnico del incidente, una fecha exacta de inicio ni una evaluación de impacto completa.",
+      "impactNote": "La publicación de emergencia no especificó una clasificación técnica, una fecha exacta de inicio ni un estado posterior de investigación o recuperación.",
       "verificationLevel": "official",
-      "summary": "La agencia estatal de gestión de emergencias informó que un incidente afectó a Lincoln County y a la ciudad de North Platte. La publicación anunció apoyo de un equipo de protección cibernética de la Guardia Nacional para ayudar a identificar la causa y apoyar la respuesta. La ficha conserva como desconocidos los detalles que la fuente no publicó.",
+      "summary": "La agencia estatal de gestión de emergencias informó que un incidente de ciberseguridad afectó a Lincoln County y a la ciudad de North Platte. La proclamación habilitó el despliegue de un equipo de protección cibernética de la Guardia Nacional para apoyar a las jurisdicciones e identificar la causa de la interrupción. La publicación no especificó el tipo técnico ni el estado posterior.",
       "sourceName": "Nebraska Emergency Management Agency",
       "sourceHost": "nema.nebraska.gov",
       "sourceUrl": "https://nema.nebraska.gov/articles.php?nid=419"
@@ -69,5 +68,6 @@
       "sourceHost": "kwch.com",
       "sourceUrl": "https://www.kwch.com/2026/09/18/ellis-county-investigating-ransomware-incident-affecting-it-systems/"
     }
-  ]
+  ],
+  "reviewedAt": "2026-11-08"
 }
