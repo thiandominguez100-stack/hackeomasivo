@@ -253,8 +253,8 @@
     setFeedState("reportsState", "reportsInfo", reports.status, reportInfo, reports.lastSuccessfulAt);
 
     const successful = [dshield, cisa, reports].filter((feed) => feed.status === "ok");
-    const stale = [dshield, cisa].filter((feed) => feed.status === "stale");
-    if (successful.length === 2) setPill("online", "Fuentes actualizadas");
+    const stale = [dshield, cisa, reports].filter((feed) => feed.status === "stale");
+    if (successful.length === 3) setPill("online", "Fuentes actualizadas");
     else if (successful.length || stale.length) setPill("degraded", "Datos parciales / anteriores");
     else setPill("pending", "Esperando fuentes públicas");
 
