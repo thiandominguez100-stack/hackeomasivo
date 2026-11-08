@@ -86,8 +86,29 @@ test("reports feed tracks the expanded eight-source allowlist", () => {
 test("interface includes the eight-source health list", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
-  assert.match(html, /BUILD 4\.3/);
+  assert.match(html, /BUILD 5\.0/);
   assert.match(html, /reportSourcesHealth/);
   assert.match(app, /acscAustralia/);
   assert.match(app, /certUa/);
+});
+
+
+test("NEXUS 5.0 warns that country markers are national centroids and hides them at local zoom", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  assert.match(html, /centroide nacional aproximado/);
+  assert.match(html, /BUILD 5\.0/);
+  assert.match(app, /maxzoom: 5\.2/);
+  assert.match(app, /marcadores nacionales ocultos/);
+  assert.match(app, /No indica dónde ocurrió un incidente/);
+});
+
+test("evidence explorer filters official publications without claiming incidents are confirmed", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  assert.match(html, /id="reportSearch"/);
+  assert.match(html, /id="reportSourceFilter"/);
+  assert.match(html, /id="reportCount"/);
+  assert.match(app, /publicación oficial; no confirma por sí sola un incidente activo/);
+  assert.match(app, /sourceFilter !== "all"/);
 });
