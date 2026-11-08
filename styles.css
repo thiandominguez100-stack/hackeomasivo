@@ -161,3 +161,39 @@ footer a{color:#7cabb9}
 .report-source.ukraine{background:#203e49;color:#95d5dc}
 .report-card{min-height:112px}
 .report-card>a{overflow-wrap:anywhere}
+
+
+/* NEXUS 5.0 — evidence and incident explorer */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.incidents-panel{margin-top:13px}
+.incident-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:0 0 13px}
+.incident-stats article{padding:10px 12px;border:1px solid #254052;border-radius:8px;background:#0a1924;min-width:0}
+.incident-stats small{display:block;color:#819aaa;font:8px 'DM Mono';letter-spacing:.55px}
+.incident-stats b{display:block;margin-top:6px;color:#e5f2f7;font-size:22px;font-variant-numeric:tabular-nums}
+.incident-controls{display:grid;grid-template-columns:minmax(210px,2fr) repeat(4,minmax(135px,1fr));gap:8px;margin-bottom:10px}
+.incident-controls input,.incident-controls select{width:100%;min-width:0;padding:10px 11px;border:1px solid #2b4658;border-radius:7px;background:#07141e;color:var(--text);font:10px Manrope,system-ui,sans-serif}
+.incident-controls input::placeholder{color:#728b9c}
+.incident-notice{margin:0 0 10px;padding:9px 11px;border-left:2px solid #5adbea;background:#0b1c29;color:#9bb1be;font-size:9px;line-height:1.6}
+.incident-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.incident-card{display:flex;flex-direction:column;gap:9px;min-width:0;padding:13px;border:1px solid #294456;border-radius:9px;background:linear-gradient(145deg,#102433,#0a1722)}
+.incident-card-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.incident-category,.incident-status,.incident-verification{display:inline-flex;align-items:center;width:fit-content;padding:4px 7px;border-radius:5px;font:8px 'DM Mono';letter-spacing:.25px}
+.incident-category{color:#8bdce9;background:#123746}
+.incident-status{color:#d1dce3;background:#253542}
+.incident-status.investigating{color:#f5c578;background:#3b2d1c}
+.incident-status.resolved{color:#78dfb5;background:#12352c}
+.incident-status.unknown{color:#aab7c0;background:#27313a}
+.incident-title{margin:0;color:#e4f1f6;font-size:13px;line-height:1.45}
+.incident-organization{margin:-5px 0 0;color:#9cb2bf;font-size:9px;line-height:1.5}
+.incident-summary{margin:0;color:#b0c1ca;font-size:10px;line-height:1.65}
+.incident-details{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px;margin:0;padding-top:8px;border-top:1px solid #1e394b}
+.incident-detail{min-width:0}
+.incident-detail dt{color:#7993a4;font:8px 'DM Mono';letter-spacing:.25px}
+.incident-detail dd{margin:4px 0 0;color:#c8d6dd;font-size:9px;line-height:1.5;overflow-wrap:anywhere}
+.incident-detail:last-child{grid-column:1/-1}
+.incident-source-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:8px;border-top:1px solid #1e394b}
+.incident-verification{color:#8cdbb9;background:#12342d}
+.incident-source-row a{color:#7ad9e8;font-size:9px;overflow-wrap:anywhere}
+.incident-results-count{margin-top:10px;color:#7d98a9;text-align:right;font:8px 'DM Mono'}
+@media(max-width:1050px){.incident-controls{grid-template-columns:repeat(3,minmax(0,1fr))}.incident-controls input{grid-column:1/-1}}
+@media(max-width:680px){.incident-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.incident-controls{grid-template-columns:1fr 1fr}.incident-controls input{grid-column:1/-1}.incident-grid{grid-template-columns:1fr}.incident-details{grid-template-columns:1fr 1fr}}
