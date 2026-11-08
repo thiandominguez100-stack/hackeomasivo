@@ -48,3 +48,17 @@ test("published page is an observatory and does not load the old simulator", () 
   assert.doesNotMatch(html, /simulation\.js/);
   assert.doesNotMatch(html, /SIMULATION ENGINE|GLOBAL ROUTE ENGINE|RUTAS SINTÉTICAS/);
 });
+
+test("research and advisory items are source-linked and contain no raw IP fields", () => {
+  const rows = snapshot.feeds.reports?.items || [];
+  assert.ok(Array.isArray(rows));
+  for (const row of rows) {
+    assert.ok(["sansDiary", "cisaAdvisories"].includes(row.sourceKey));
+    assert.ok(typeof row.title === "string" && row.title.length > 0);
+    const url = new URL(row.url);
+    assert.equal(url.protocol, "https:");
+    assert.ok(url.hostname === "isc.sans.edu" || url.hostname === "cisa.gov" || url.hostname.endsWith(".cisa.gov"));
+    assert.ok(!("ip" in row));
+    assert.ok(!("description" in row));
+  }
+});
