@@ -1,1 +1,161 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#07111b"><meta name="description" content="NEXUS: simulador visual y local de telemetría ficticia."><title>NEXUS 3.5 — Cyber Operations Lab</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./assets/favicon.svg"><link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css"><link rel="stylesheet" href="./styles.css?v=8"></head><body><div class="shell"><header><a class="brand"><b>N</b><span>NEXUS<small>CYBER OPERATIONS LAB</small></span></a><div class="status"><i></i> SIMULACIÓN LOCAL <span id="clock">--:--:-- UTC</span></div><button id="installBtn" hidden>Instalar</button></header><section class="hero"><div><label>ENTORNO DE ENTRENAMIENTO · BUILD 3.5</label><h1>Global <em>Threat</em> Observatory</h1><p>Visualización sintética de actividad cibernética global. Sin objetivos, tráfico de red ni ataques reales.</p></div><strong class="online">● SIMULATION ENGINE<br><small>ONLINE · LOCAL ONLY</small></strong></section><section class="metrics"><article><label>EVENTOS SIMULADOS</label><b id="totalEvents">0</b><small>ACUMULADO DE SESIÓN</small></article><article><label>EVENTOS / SEGUNDO</label><b id="rate">0</b><small>VELOCIDAD SINTÉTICA</small></article><article><label>REGIONES ACTIVAS</label><b id="regions">0</b><small>AGRUPACIONES FICTICIAS</small></article><article><label>RUTAS VISUALES</label><b id="routeMetric">0</b><small>FLUJOS FICTICIOS</small></article><article><label>TIEMPO ACTIVO</label><b id="elapsed">00:00:00</b><small>RELOJ DE SIMULACIÓN</small></article></section><section class="workspace"><div class="panel map-panel"><div class="panel-head"><div><label>GEOSPATIAL INTELLIGENCE</label><h2>Globo urbano 3D</h2></div><label class="building-toggle building-toggle-head"><input id="buildingToggle" type="checkbox" checked> EDIFICIOS 3D</label><button id="resetView" title="Restablecer vista">⌖</button></div><div id="map"></div><div class="map-tools"><label for="cityJump">IR A CIUDAD</label><select id="cityJump"><option value="">Seleccionar ciudad…</option><option>Buenos Aires</option><option>São Paulo</option><option>New York</option><option>San Francisco</option><option>London</option><option>Paris</option><option>Berlin</option><option>Cairo</option><option>Lagos</option><option>Dubai</option><option>Mumbai</option><option>Singapore</option><option>Tokyo</option><option>Seoul</option><option>Sydney</option><option>Johannesburg</option></select><span id="mapStatus">Cargando cartografía 3D…</span></div><div class="map-foot"><span>GLOBO 3D · EDIFICIOS INSPECCIONABLES · RUTAS SINTÉTICAS</span><span>ZOOM · ROTAR · EXPLORAR</span></div></div><aside><div class="panel"><div class="panel-head"><div><label>CONTROL DE MISIÓN</label><h2>Parámetros</h2></div><small class="tag">LOCAL</small></div><label class="field" for="targetCount">Volumen de simulación</label><div class="number"><input id="targetCount" type="number" min="1" max="1000000000000" step="1000" value="3000000"><small>EVENTOS</small></div><input id="volumeSlider" type="range" min="1000" max="100000000" step="1000" value="3000000"><div class="range-label"><span>1 MIL</span><span>100 MILLONES</span></div><label class="field" for="speed">Intensidad visual</label><select id="speed"><option value="1">1× Calmado</option><option value="5" selected>5× Normal</option><option value="20">20× Intenso</option><option value="100">100× Extremo</option><option value="1000">1000× Turbo</option></select><div class="buttons"><button id="startBtn" class="primary">▶ Iniciar</button><button id="pauseBtn" disabled>Ⅱ Pausar</button><button id="resetBtn">↻</button></div><div class="progress-label"><span>PROGRESO DEL ESCENARIO</span><b id="progressText">0%</b></div><div class="progress"><i id="progressBar"></i></div><p class="hint">El volumen es un contador matemático. Solo se animan muestras representativas para evitar bloquear el navegador, incluso con cifras enormes.</p></div><div class="panel route-panel"><div class="panel-head"><div><label>GLOBAL ROUTE ENGINE</label><h2>Flujos geográficos</h2></div><small class="live">● SYNTHETIC</small></div><label class="field" for="routeCount">Cantidad de rutas visibles</label><select id="routeCount"><option value="12">12 rutas</option><option value="24" selected>24 rutas</option><option value="36">36 rutas</option></select><label class="toggle-row"><input id="routeToggle" type="checkbox" checked><span>Mostrar líneas y flechas animadas</span></label><p id="routeSummary" class="hint">Rutas generadas localmente entre ciudades ficticias de referencia.</p><div class="route-legend"><span><i class="legend-line"></i> Trayectoria geodésica</span><span><i class="legend-arrow">➤</i> Flecha: velocidad actual <b id="speedLegendCurrent">5× · Normal</b></span><span><i class="legend-dot"></i> Evento sintético</span></div><div class="legend-group"><label>CATEGORÍA SIMULADA · COLOR DE LA LÍNEA</label><div class="color-legend"><span><i style="--swatch:#45c6ff"></i>Phishing simulado</span><span><i style="--swatch:#a78bfa"></i>Malware simulado</span><span><i style="--swatch:#ff668a"></i>Denegación de servicio</span><span><i style="--swatch:#f5b942"></i>Acceso no autorizado</span><span><i style="--swatch:#5ee0ae"></i>Reconocimiento</span></div></div><div class="legend-group"><label>VELOCIDAD · COLOR DE LA FLECHA</label><div class="color-legend speed-colors"><span><i style="--swatch:#49b8ff"></i>1× lenta</span><span><i style="--swatch:#5ee0ae"></i>5× normal</span><span><i style="--swatch:#f5d34f"></i>20× alta</span><span><i style="--swatch:#ff9b45"></i>100× muy alta</span><span><i style="--swatch:#ff5577"></i>1000× máxima</span></div></div></div><div class="panel feed-panel"><div class="panel-head"><div><label>LIVE TELEMETRY</label><h2>Flujo de eventos</h2></div><small class="live">● LIVE</small></div><div id="eventFeed" class="feed"><p>Esperando inicio de simulación…</p></div></div></aside></section><section class="bottom"><div class="panel"><label>REGIONAL OVERVIEW</label><h2>Actividad por región</h2><div id="regionList"><p>Sin actividad todavía.</p></div></div><div class="panel"><label>ENGINE TELEMETRY</label><h2>Estado del sistema</h2><div class="system"><span>RENDERER<b id="rendererStatus">Inicializando</b></span><span>MAP DATA<b>OpenFreeMap / OSM</b></span><span>EVENT MODEL<b>Local sintético</b></span><span>NETWORK ACTIONS<b class="safe">DESHABILITADAS</b></span></div></div></section><footer>NEXUS CYBER LAB · SIMULACIÓN FICTICIA <span>NO REAL ATTACKS · NO TARGETING · NO NETWORK SCANS</span></footer></div><script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script><script src="./simulation.js?v=8"></script><script src="./app.js?v=8"></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111b">
+  <meta name="description" content="NEXUS: observatorio de inteligencia de amenazas con datos públicos de DShield y CISA.">
+  <title>NEXUS 4.0 — Global Cyber Threat Observatory</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/favicon.svg">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="./styles.css?v=9">
+</head>
+<body>
+<div class="shell">
+  <header>
+    <a class="brand" href="./" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL CYBER OBSERVATORY</small></span></a>
+    <div class="header-right">
+      <div class="status-pill" id="overallStatus"><i></i><span>Conectando fuentes</span></div>
+      <span class="utc-clock" id="clock">--:--:-- UTC</span>
+      <button id="installBtn" class="install-btn" hidden>Instalar</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <label class="eyebrow">THREAT INTELLIGENCE · BUILD 4.0</label>
+      <h1>Global <em>Cyber Threat</em> Observatory</h1>
+      <p>Datos públicos de seguridad, actividad observada por sensores e incidentes documentados.</p>
+    </div>
+    <div class="hero-meta">
+      <span class="live-dot"></span>
+      <div><b>LECTURA AUTOMÁTICA</b><small>Sin simulaciones · Sin acciones de red ofensivas</small></div>
+    </div>
+  </section>
+
+  <div class="freshness-strip">
+    <span><i class="pulse-dot"></i> INTERFAZ: ACTUALIZA CADA 60 SEGUNDOS</span>
+    <span>RECOLECCIÓN DE FUENTES: CADA HORA</span>
+    <span id="lastUpdated">Esperando primer conjunto de datos…</span>
+  </div>
+
+  <section class="metrics" aria-label="Indicadores observados">
+    <article class="metric-card">
+      <label>REPORTES DE SENSORES · HOY</label>
+      <b id="dailyReports">—</b>
+      <small id="dailyDate">DShield · día UTC</small>
+    </article>
+    <article class="metric-card">
+      <label>FUENTES OBSERVADAS · HOY</label>
+      <b id="dailySources">—</b>
+      <small>Direcciones de origen únicas en los sensores</small>
+    </article>
+    <article class="metric-card">
+      <label>DESTINOS REPORTADOS · HOY</label>
+      <b id="dailyTargets">—</b>
+      <small>Objetivos de los reportes de sensores</small>
+    </article>
+    <article class="metric-card">
+      <label>VULNERABILIDADES KEV</label>
+      <b id="kevTotal">—</b>
+      <small>Entradas del catálogo de CISA</small>
+    </article>
+    <article class="metric-card infocon-card">
+      <label>NIVEL INFOCON · SANS</label>
+      <b id="infoconValue">—</b>
+      <small id="infoconCaption">Estado comunicado por SANS ISC</small>
+    </article>
+  </section>
+
+  <section class="workspace">
+    <div class="panel map-panel">
+      <div class="panel-head">
+        <div><label>GEOSPATIAL INTELLIGENCE</label><h2>Globo de actividad observada</h2></div>
+        <div class="map-head-controls">
+          <label class="building-toggle"><input id="buildingToggle" type="checkbox" checked> EDIFICIOS 3D</label>
+          <button id="resetView" class="icon-button" title="Restablecer vista del globo">⌖</button>
+        </div>
+      </div>
+      <div class="map-annotation"><span class="legend-circle"></span> País del registro de red · ubicación aproximada · no es la ubicación de una persona</div>
+      <div id="map" role="img" aria-label="Globo 3D con marcadores agregados de actividad de sensores por país"></div>
+      <div class="map-tools">
+        <label for="cityJump">EXPLORAR CIUDAD</label>
+        <select id="cityJump">
+          <option value="">Seleccionar ciudad…</option>
+          <option value="Buenos Aires">Buenos Aires</option><option value="São Paulo">São Paulo</option>
+          <option value="New York">New York</option><option value="San Francisco">San Francisco</option>
+          <option value="London">London</option><option value="Paris">Paris</option><option value="Berlin">Berlin</option>
+          <option value="Cairo">Cairo</option><option value="Lagos">Lagos</option><option value="Dubai">Dubai</option>
+          <option value="Mumbai">Mumbai</option><option value="Singapore">Singapore</option><option value="Tokyo">Tokyo</option>
+          <option value="Seoul">Seoul</option><option value="Sydney">Sydney</option><option value="Johannesburg">Johannesburg</option>
+        </select>
+        <span id="mapStatus">Cargando cartografía…</span>
+      </div>
+      <div class="map-foot"><span>DATOS AGREGADOS · SIN RUTAS NI CONEXIONES INVENTADAS</span><span>ZOOM · ROTAR · INSPECCIONAR EDIFICIOS</span></div>
+    </div>
+
+    <aside class="side-column">
+      <div class="panel">
+        <div class="panel-head"><div><label>FEED HEALTH</label><h2>Estado de las fuentes</h2></div><span class="tag">PUBLIC DATA</span></div>
+        <div class="source-health">
+          <div class="source-row"><span class="source-mark dshield-mark">D</span><div><b>DShield / SANS ISC</b><small id="dshieldInfo">Esperando datos…</small></div><span class="feed-state pending" id="dshieldState">PENDIENTE</span></div>
+          <div class="source-row"><span class="source-mark cisa-mark">C</span><div><b>CISA · Known Exploited Vulnerabilities</b><small id="cisaInfo">Esperando datos…</small></div><span class="feed-state pending" id="cisaState">PENDIENTE</span></div>
+        </div>
+        <p class="method-note">Una fuente puede quedar temporalmente desactualizada. NEXUS conserva la última lectura válida y señala su antigüedad.</p>
+      </div>
+
+      <div class="panel country-panel">
+        <div class="panel-head"><div><label>COUNTRY AGGREGATES</label><h2>Países en la muestra</h2></div><small class="subtag">TOP 20</small></div>
+        <div id="countryList" class="country-list"><p class="empty-state">Todavía no hay datos geográficos.</p></div>
+        <p class="source-caption">Agrupación de los 20 registros de origen destacados por DShield. No representa todo el tráfico mundial.</p>
+      </div>
+    </aside>
+  </section>
+
+  <section class="lower-grid">
+    <div class="panel">
+      <div class="panel-head"><div><label>SENSOR HISTORY</label><h2>Reportes diarios · últimos 30 días</h2></div><span class="subtag">UTC</span></div>
+      <div id="historyBars" class="history-bars"><p class="empty-state">Esperando historial…</p></div>
+      <div class="chart-legend"><span><i></i> Reportes comunicados por sensores DShield</span><small>El día actual puede estar incompleto.</small></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><div><label>OBSERVED SOURCES</label><h2>Registros destacados</h2></div><a class="text-link" href="https://isc.sans.edu/sources/" target="_blank" rel="noopener noreferrer">Ver fuente</a></div>
+      <div id="sourceFeed" class="source-feed"><p class="empty-state">Esperando registros de sensores…</p></div>
+      <p class="source-caption">Se ocultan las direcciones IP. Los registros de sensores pueden incluir escáneres de investigación y no implican que cada fuente sea maliciosa.</p>
+    </div>
+  </section>
+
+  <section class="panel kev-panel">
+    <div class="panel-head"><div><label>CONFIRMED EXPLOITATION CATALOGUE</label><h2>Vulnerabilidades explotadas conocidas</h2></div><a class="text-link" href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener noreferrer">Catálogo oficial CISA ↗</a></div>
+    <div id="kevList" class="kev-grid"><p class="empty-state">Esperando catálogo CISA…</p></div>
+  </section>
+
+  <section class="bottom-grid">
+    <div class="panel">
+      <label>METODOLOGÍA</label><h2>Cómo leer este observatorio</h2>
+      <p>Los círculos del globo agregan registros de origen por país. El país corresponde al registro de la red o ASN y se sitúa en un centroide aproximado; no localiza a una persona, un dispositivo ni una víctima. Los reportes de DShield son observaciones compartidas por sensores y pueden contener actividad de investigación o falsos positivos.</p>
+      <p>El catálogo KEV de CISA identifica vulnerabilidades cuya explotación se conoce. Una entrada no significa que se haya producido un nuevo ataque en ese instante. Ninguno de estos feeds cubre todos los incidentes de Internet.</p>
+    </div>
+    <div class="panel">
+      <label>SYSTEM TELEMETRY</label><h2>Conectividad y actualización</h2>
+      <div class="system-grid">
+        <span>MAP ENGINE<b id="rendererStatus">Inicializando</b></span>
+        <span>DATA SNAPSHOT<b id="snapshotState">Pendiente</b></span>
+        <span>ÚLTIMA RECOLECCIÓN<b id="snapshotAge">—</b></span>
+        <span>ACCIONES DE RED<b class="safe">SOLO LECTURA</b></span>
+      </div>
+      <p class="method-note">El navegador consulta únicamente el archivo público del proyecto. La recolección externa se ejecuta de forma programada en GitHub Actions, no desde tu dispositivo.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>NEXUS · GLOBAL CYBER THREAT OBSERVATORY · BUILD 4.0</span>
+    <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></span>
+  </footer>
+</div>
+<script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+<script src="./app.js?v=9"></script>
+</body>
+</html>
