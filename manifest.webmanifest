@@ -2,7 +2,7 @@
   "id": "./",
   "name": "NEXUS Global Cyber Threat Observatory",
   "short_name": "NEXUS",
-  "description": "Observatorio con datos horarios DShield, diarios SANS, avisos CISA y catálogo KEV.",
+  "description": "Observatorio defensivo con telemetría DShield, CISA KEV y ocho canales de CERT y organismos oficiales.",
   "lang": "es-AR",
   "start_url": "./",
   "scope": "./",
