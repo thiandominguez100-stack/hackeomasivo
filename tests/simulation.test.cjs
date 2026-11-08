@@ -13,7 +13,7 @@ test("path interpolation returns a point on the route for progress 0 and 1",()=>
  const mid=interpolatePath(p,.5);assert.ok(mid[0]>0&&mid[0]<20);
 });
 test("generated routes only use declared fictional city hubs",()=>{
- const route=createRoute(()=>0.25);
+ const route=createRoute((()=>{let n=0;return()=>((n++%16)+0.25)/16})());
  assert.ok(HUBS.some(h=>h.name===route.from.name));assert.ok(HUBS.some(h=>h.name===route.to.name));
  assert.notEqual(route.from.name,route.to.name);assert.ok(route.path.length>10);
 });
