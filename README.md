@@ -38,7 +38,8 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El popup de cada país explica que el punto corresponde al país de registro de red/ASN, no al lugar de un incidente.
 - El explorador permite buscar publicaciones por título, organismo y fuente. Solo conserva metadatos y enlaces oficiales.
 - Una publicación, aviso o investigación no se convierte automáticamente en un incidente confirmado. El explorador no inventa gravedad, víctimas, ubicación ni estado operativo.
-- Esta versión mejora la interpretación y consulta de publicaciones; todavía no constituye un archivo histórico completo de incidentes confirmados.
+- El recolector mantiene `data/publications-history.json`: hasta 2.000 publicaciones oficiales, deduplicadas y con retención de 365 días. El explorador combina el archivo con el snapshot reciente y muestra hasta 100 resultados por consulta.
+- El archivo conserva solo título, fuente, tipo, fecha y enlace HTTPS oficial. Es un historial de publicaciones, no un registro exhaustivo de incidentes confirmados.
 
 ## Cómo interpretar los datos
 
@@ -51,7 +52,8 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 
 ## Pruebas
 
-- La interfaz debe mostrar `BUILD 5.0`, filtros del explorador y aviso de centroide nacional.
+- La interfaz debe mostrar `BUILD 5.0`, filtros del explorador, estado del archivo histórico y aviso de centroide nacional.
+- `update_publication_history` debe deduplicar y validar el host HTTPS de cada publicación.
 - Las capas de centroides nacionales deben declarar `maxzoom: 5.2`.
 
 - `python scripts/refresh_intel.py`
