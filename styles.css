@@ -125,3 +125,16 @@ footer a{color:#7cabb9}
 @media(max-width:1120px){.workspace{grid-template-columns:minmax(0,1.4fr) minmax(300px,.8fr)}.metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.kev-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:900px){.shell{padding:0 14px}.workspace,.lower-grid,.bottom-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}#map{height:440px}.side-column{display:grid;grid-template-columns:1fr 1fr}.hero-meta{display:none}}
 @media(max-width:620px){header{height:64px}.brand{letter-spacing:2px}.brand>b{width:34px;height:34px}.brand small{font-size:7px}.header-right{gap:8px}.utc-clock{display:none}.status-pill{font-size:8px}.hero{padding:22px 0 17px}.hero h1{font-size:28px}.hero p{font-size:11px;line-height:1.5}.freshness-strip{font-size:7px}.metrics{gap:7px}.metric-card{padding:11px}.metric-card label{font-size:7px}.metric-card>b{font-size:20px}.metric-card small{font-size:8px}.side-column{grid-template-columns:1fr}#map{height:365px}.panel{padding:12px}.map-head-controls{gap:5px}.building-toggle{font-size:7px;padding:6px}.map-foot{font-size:7px;flex-direction:column}.map-tools select{min-width:135px}.kev-grid{grid-template-columns:1fr}.chart-legend{align-items:flex-start;flex-direction:column}.bottom-grid p{font-size:9px}footer{flex-direction:column;line-height:1.7}}
+
+.reports-panel{margin-top:13px}
+.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.report-card{min-width:0;padding:12px;border:1px solid #253f51;border-radius:9px;background:#0a1924}
+.report-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.report-meta time{color:#7791a2;font:8px 'DM Mono'}
+.report-source{display:inline-block;border-radius:5px;padding:4px 6px;font:7px 'DM Mono';letter-spacing:.45px}
+.report-source.sans{background:#123746;color:#8bdce9}
+.report-source.cisa{background:#40311f;color:#f4c27c}
+.report-card>a{display:block;color:#e2eff5;font-size:11px;font-weight:700;line-height:1.55}
+.report-kind{margin:8px 0 0;color:#7894a5;font-size:8px}
+.reports-mark{background:#193346;color:#8ad8e6}
+@media(max-width:620px){.report-grid{grid-template-columns:1fr}}
