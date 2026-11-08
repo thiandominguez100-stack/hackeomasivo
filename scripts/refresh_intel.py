@@ -378,7 +378,7 @@ def main() -> None:
         "schemaVersion": DASHBOARD_SCHEMA,
         "generatedAt": iso_now(),
         "refreshIntervalMinutes": 60,
-        "overallStatus": "online" if ok_count == 2 else ("degraded" if ok_count or stale_count else "offline"),
+        "overallStatus": "online" if ok_count == len(feeds) else ("degraded" if ok_count or stale_count else "offline"),
         "feeds": feeds,
         "methodology": {
             "dshield": "Sensor-submitted network observations. Reports are not equivalent to confirmed criminal attacks; source classification may include scanners and benign research activity.",
