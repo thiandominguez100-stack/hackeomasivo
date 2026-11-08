@@ -35,6 +35,7 @@ jobs:
         run: |
           set -euo pipefail
           cp data/current.json "$RUNNER_TEMP/nexus-current.json"
+          cp data/publications-history.json "$RUNNER_TEMP/nexus-history.json"
 
           for attempt in 1 2 3 4 5; do
             echo "Publishing snapshot attempt $attempt/5"
@@ -44,7 +45,8 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             mkdir -p data
             cp "$RUNNER_TEMP/nexus-current.json" data/current.json
-            git add data/current.json
+            cp "$RUNNER_TEMP/nexus-history.json" data/publications-history.json
+            git add data/current.json data/publications-history.json
 
             if git diff --cached --quiet; then
               echo "The latest snapshot is already published."
