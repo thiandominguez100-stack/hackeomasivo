@@ -1,36 +1,17 @@
-# NEXUS Cyber Lab — HackeoMasivo
+# NEXUS Cyber Operations Lab v2
 
-Centro de operaciones visual para una simulación local y ficticia de **3.000.000 de eventos** sobre un globo mundial rotatorio. Es una web estática preparada para GitHub Pages y como PWA instalable.
+Simulador visual local de telemetría cibernética ficticia, preparado para GitHub Pages y PWA.
 
-## Seguridad y privacidad
+- Globo interactivo MapLibre GL con navegación, zoom, inclinación y edificios 3D al acercarse a zonas urbanas.
+- Volumen configurable de 1 a 1.000.000.000.000 eventos sintéticos.
+- El motor calcula el contador por tiempo; no crea un objeto por evento.
+- Máximo de 65 marcadores animados para preservar memoria y rendimiento.
+- Métricas, feed, regiones y controles de intensidad.
+- PWA instalable con shell básico offline.
 
-- Todos los eventos, recuentos y rutas son sintéticos; no representan ataques reales.
-- No hay escaneos, explotación, contraseñas, paquetes, objetivos ni direcciones IP.
-- El contador acumula el volumen simulado; el navegador anima muestras representativas para evitar crear millones de objetos.
-- No hay backend, Firebase, claves, analítica ni integraciones de correo.
-- Los únicos recursos cargados por la aplicación son los archivos del mismo repositorio. El service worker solo almacena recursos del mismo origen.
+Seguridad: todos los eventos y nodos son ficticios. No se generan solicitudes a objetivos, escaneos, paquetes ni ataques. La cartografía representa geografía pública de OpenFreeMap/OpenStreetMap, no objetivos. Sin Firebase, backend, claves, analítica ni correo.
 
-## Publicar
+Publicación: GitHub Settings > Pages > Deploy from a branch > main > /(root).
+URL: https://thiandominguez100-stack.github.io/hackeomasivo/
 
-1. En GitHub abrí **Settings → Pages**.
-2. En **Build and deployment**, elegí **Deploy from a branch**.
-3. Seleccioná la rama `main` y la carpeta `/(root)`; guardá.
-4. Cuando Pages finalice el despliegue, la web estará en:
-
-   https://thiandominguez100-stack.github.io/hackeomasivo/
-
-El sitio usa rutas relativas, por lo que funciona en el subdirectorio del proyecto.
-
-## Instalar
-
-- **Chrome o Edge en PC:** abrí la web y elegí el icono de instalación de la barra de direcciones o el botón **Instalar** cuando aparezca.
-- **Android:** menú del navegador → **Instalar aplicación** o **Añadir a pantalla de inicio**.
-- **iPhone/iPad:** Safari → **Compartir** → **Añadir a pantalla de inicio**.
-
-Después de la primera carga, el service worker guarda los recursos locales para permitir el uso sin conexión.
-
-## Implementación
-
-La aplicación no necesita compilación ni servicios externos. Los recursos de ejecución están comprimidos en `assets/runtime/` y el cargador los descomprime en el navegador mediante `DecompressionStream`. Se requiere un navegador moderno con soporte para esa API y HTTPS (GitHub Pages lo proporciona).
-
-El código editable y las pruebas automatizadas se entregan en el paquete fuente adjunto a la conversación.
+El mapa 3D requiere internet para cargar MapLibre y teselas vectoriales; motor y controles son locales.
