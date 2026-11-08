@@ -5,6 +5,7 @@
   const fmt = (value) => Number(value || 0).toLocaleString("es-AR");
   const emptyCollection = () => ({ type: "FeatureCollection", features: [] });
   const DATA_URL = "./data/current.json";
+  const DATA_HISTORY_URL = "./data/publications-history.json";
   const CITY_HUBS = {
     "Buenos Aires": [-58.3816, -34.6037], "São Paulo": [-46.6333, -23.5505],
     "New York": [-74.006, 40.7128], "San Francisco": [-122.4194, 37.7749],
@@ -30,6 +31,7 @@
   let map = null;
   let mapReady = false;
   let latest = null;
+  let historyItems = [];
   let installPrompt = null;
   let refreshInProgress = false;
 
@@ -178,15 +180,21 @@
   function renderReports(reports) {
     const container = $("reportsList");
     container.replaceChildren();
-    const allItems = Array.isArray(reports && reports.items) ? reports.items.slice(0, 32) : [];
+    const currentItems = Array.isArray(reports && reports.items) ? reports.items : [];
+    const merged = new Map();
+    [...historyItems, ...currentItems].forEach((item) => {
+      if (item && typeof item.url === "string" && item.url.startsWith("https://")) merged.set(item.url, item);
+    });
+    const allItems = [...merged.values()].sort((a, b) => String(b.publishedAt || "").localeCompare(String(a.publishedAt || ""))).slice(0, 2000);
     const query = (($("reportSearch") && $("reportSearch").value) || "").trim().toLocaleLowerCase("es");
     const sourceFilter = ($("reportSourceFilter") && $("reportSourceFilter").value) || "all";
-    const items = allItems.filter((item) => {
+    const filteredItems = allItems.filter((item) => {
       if (sourceFilter !== "all" && item.sourceKey !== sourceFilter) return false;
       const haystack = [item.title, item.sourceName, item.kind].filter(Boolean).join(" ").toLocaleLowerCase("es");
       return !query || haystack.includes(query);
     });
-    safeText($("reportCount"), items.length + " de " + allItems.length + " publicaciones");
+    const items = filteredItems.slice(0, 100);
+    safeText($("reportCount"), filteredItems.length + " resultados · " + items.length + " mostrados");
     let rendered = 0;
     if (!items.length) {
       addText(container, "p", "empty-state", allItems.length
@@ -528,6 +536,24 @@
     updateMap(dshield);
   }
 
+  async function refreshHistory() {
+    try {
+      const response = await fetch(DATA_HISTORY_URL + "?v=" + Date.now(), {
+        method: "GET", cache: "no-store", headers: { "Accept": "application/json" }
+      });
+      if (!response.ok) throw new Error("Historial no disponible (" + response.status + ")");
+      const archive = await response.json();
+      if (!archive || archive.schemaVersion !== 1 || !Array.isArray(archive.items)) {
+        throw new Error("Formato de historial no válido");
+      }
+      historyItems = archive.items;
+      safeText($("reportArchiveStatus"), "ARCHIVO HISTÓRICO · " + fmt(historyItems.length) + " publicaciones · retención de 365 días");
+      renderReports(latest && latest.feeds ? latest.feeds.reports : {});
+    } catch (error) {
+      safeText($("reportArchiveStatus"), "ARCHIVO HISTÓRICO · esperando primera recolección");
+    }
+  }
+
   async function refresh() {
     if (refreshInProgress) return;
     refreshInProgress = true;
@@ -563,6 +589,7 @@
   if (reportSearch) reportSearch.addEventListener("input", () => renderReports(latest && latest.feeds ? latest.feeds.reports : {}));
   if (reportSourceFilter) reportSourceFilter.addEventListener("change", () => renderReports(latest && latest.feeds ? latest.feeds.reports : {}));
 
+  refreshHistory();
   initMap();
   updateClock();
   setInterval(updateClock, 1000);
