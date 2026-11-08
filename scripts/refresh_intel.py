@@ -2,7 +2,7 @@
 """Build a public, read-only NEXUS snapshot from defensive threat-intelligence feeds.
 
 No probes, scans, exploit attempts, or requests are sent to observed hosts.
-Only the SANS ISC and CISA public data services are queried.
+Only public DShield, CISA KEV, and configured CERT/advisory feeds are queried.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data" / "current.json"
 USER_AGENT = (
-    "Mozilla/5.0 (compatible; NEXUS-Global-Cyber-Observatory/4.3; "
+    "Mozilla/5.0 (compatible; NEXUS-Global-Cyber-Observatory/5.0; "
     "+https://github.com/thiandominguez100-stack/hackeomasivo)"
 )
 DASHBOARD_SCHEMA = 1
