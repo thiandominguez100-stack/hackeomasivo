@@ -1,4 +1,4 @@
-# NEXUS 4.3 — Global Cyber Threat Observatory
+# NEXUS 5.0 — Evidence & Incident Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -32,6 +32,14 @@ NEXUS conserva títulos, fuente, fecha y enlace oficial. No copia cuerpos de art
 
 No hace falta Firebase, servidor propio, claves API ni credenciales para estas fuentes. La recolección se ejecuta en GitHub Actions, no en el navegador del visitante.
 
+## NEXUS 5.0: precisión geográfica y explorador de evidencia
+
+- El mapa deja de mostrar los marcadores nacionales cuando el zoom supera 5.2. Esos puntos son centroides nacionales y podrían parecer ubicaciones locales al acercar la vista.
+- El popup de cada país explica que el punto corresponde al país de registro de red/ASN, no al lugar de un incidente.
+- El explorador permite buscar publicaciones por título, organismo y fuente. Solo conserva metadatos y enlaces oficiales.
+- Una publicación, aviso o investigación no se convierte automáticamente en un incidente confirmado. El explorador no inventa gravedad, víctimas, ubicación ni estado operativo.
+- Esta versión mejora la interpretación y consulta de publicaciones; todavía no constituye un archivo histórico completo de incidentes confirmados.
+
 ## Cómo interpretar los datos
 
 - Los reportes de DShield son observaciones enviadas por sensores participantes. No equivalen automáticamente a delitos ni a ataques confirmados; puede haber escáneres de investigación, infraestructura compartida o falsos positivos.
@@ -42,6 +50,9 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - Si una fuente falla, se conserva su última lectura válida y se marca como anterior. No se generan datos sintéticos para completar huecos.
 
 ## Pruebas
+
+- La interfaz debe mostrar `BUILD 5.0`, filtros del explorador y aviso de centroide nacional.
+- Las capas de centroides nacionales deben declarar `maxzoom: 5.2`.
 
 - `python scripts/refresh_intel.py`
 - `python -m py_compile scripts/refresh_intel.py`
