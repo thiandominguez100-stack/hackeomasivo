@@ -42,7 +42,7 @@ test("no generated simulation events or fake route fields are present", () => {
 
 test("published page is an observatory and does not load the old simulator", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  assert.match(html, /BUILD 6.3/);
+  assert.match(html, /BUILD 6.4/);
   assert.match(html, /DShield/);
   assert.match(html, /CISA/);
   assert.doesNotMatch(html, /simulation\.js/);
@@ -86,7 +86,7 @@ test("reports feed tracks the expanded eight-source allowlist", () => {
 test("interface includes the eight-source health list", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
-  assert.match(html, /BUILD 6.3/);
+  assert.match(html, /BUILD 6.4/);
   assert.match(html, /reportSourcesHealth/);
   assert.match(app, /acscAustralia/);
   assert.match(app, /certUa/);
@@ -97,7 +97,7 @@ test("NEXUS 6.3 warns that country markers are national centroids and hides them
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   assert.match(html, /centroide nacional aproximado/);
-  assert.match(html, /BUILD 6.3/);
+  assert.match(html, /BUILD 6.4/);
   assert.match(app, /maxzoom: 5\.2/);
   assert.match(app, /marcadores nacionales ocultos/);
   assert.match(app, /No indica dónde ocurrió un incidente/);
@@ -131,8 +131,8 @@ test("NEXUS 6.3 retains the 3D MapLibre globe and documents safe orbital scope",
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6.3/);
-  assert.match(html, /release=6.3/);
+  assert.match(html, /BUILD 6.4/);
+  assert.match(html, /release=6.4/);
   assert.match(html, /Contexto orbital/);
   assert.match(html, /cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium/);
   assert.match(app, /styles\/liberty/);
@@ -148,7 +148,7 @@ test("NEXUS 6.3 exposes all modes and global weather source controls", () => {
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6.3/);
+  assert.match(html, /BUILD 6.4/);
   assert.match(html, /id="cyberModeBtn"/);
   assert.match(html, /id="weatherModeBtn"/);
   assert.match(html, /id="orbitalModeBtn"/);
@@ -249,11 +249,39 @@ test("NEXUS 6.3 adds a 24-hour global weather forecast timeline", () => {
 });
 
 
-test("NEXUS 6.3.1 loads Cesium and its worker modules from the same pinned CDN", () => {
+test("NEXUS 6.4 keeps Cesium and its worker modules from the same pinned CDN", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const sw = fs.readFileSync(path.join(__dirname, "../sw.js"), "utf8");
   assert.match(html, /window\.CESIUM_BASE_URL = "https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\//);
   assert.match(html, /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\/Cesium\.js"><\/script>/);
   assert.match(html, /app\.js\?v=20/);
   assert.match(sw, /nexus-shell-v20/);
+});
+
+
+test("NEXUS 6.4 adds NASA GIBS satellite imagery to the 3D globe", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
+  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
+  assert.match(html, /BUILD 6\.4/);
+  assert.match(html, /id="satelliteModeBtn"/);
+  assert.match(html, /id="satelliteControls"/);
+  assert.match(html, /id="satelliteLayerSelect"/);
+  assert.match(html, /id="satelliteFrameSlider"/);
+  assert.match(html, /id="satelliteDateInput"/);
+  assert.match(html, /id="satelliteOpacitySlider"/);
+  assert.match(app, /MODIS_Terra_CorrectedReflectance_TrueColor/);
+  assert.match(app, /MODIS_Aqua_CorrectedReflectance_TrueColor/);
+  assert.match(app, /GOES-East_ABI_GeoColor/);
+  assert.match(app, /GOES-West_ABI_GeoColor/);
+  assert.match(app, /NASA_GIBS_ROOT/);
+  assert.match(app, /GoogleMapsCompatible_Level9\/\{z\}\/\{y\}\/\{x\}\.jpg/);
+  assert.match(app, /function renderSatelliteImagery/);
+  assert.match(app, /function setSatelliteFrame/);
+  assert.match(app, /raster-opacity/);
+  assert.match(app, /SATELLITE_FRAME_DAYS = 14/);
+  assert.match(css, /satellite-controls/);
+  assert.match(readme, /NASA GIBS/);
+  assert.match(readme, /últimos 14 días/);
 });
