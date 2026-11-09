@@ -70,7 +70,7 @@
   };
   const ORBITAL_GROUP_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=WEATHER&FORMAT=JSON";
   const ORBITAL_REFRESH_MS = 2 * 60 * 60 * 1000;
-  const CIVIL_WEATHER_MISSION = /^(NOAA(?:\s|$)|SUOMI NPP|METOP(?:-|\s|$)|METEOSAT|GOES(?:\s|$)|HIMAWARI|FENGYUN|METEOR-M|ARKTIKA-M|INSAT-3D|GEO-KOMPSAT|ELEKTRO-L|SENTINEL-3|MTG-)/i;
+  const CIVIL_WEATHER_MISSION = /^(NOAA(?:\s|$)|SUOMI NPP|METOP(?:-|\s|$)|METEOSAT|GOES(?:\s|$)|HIMAWARI|METEOR-M|ARKTIKA-M|INSAT-3D|GEO-KOMPSAT|ELEKTRO-L|SENTINEL-3|MTG-)/i;
   let activeWeatherVariable = "temperature";
   let orbitalViewer = null;
   let orbitalSatellites = [];
