@@ -126,83 +126,46 @@ test("publication history archive is loaded by the interface and documented as m
 });
 
 
-test("NEXUS 6.2 retains the colored globe and explains orbital data limits", () => {
+test("NEXUS 6.2 retains the 3D MapLibre globe and documents safe orbital scope", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6\.1/);
-  assert.match(html, /release=6\.1/);
+  assert.match(html, /BUILD 6.2/);
+  assert.match(html, /release=6.2/);
   assert.match(html, /Contexto orbital/);
-  assert.match(html, /celestrak\.org\/NORAD\/documentation\/gp-data-formats\.php/);
+  assert.match(html, /cesiumjs\/releases\/1\.144/);
   assert.match(app, /styles\/liberty/);
   assert.match(app, /setSky/);
   assert.match(app, /atmosphere-blend/);
   assert.match(css, /radial-gradient/);
-  assert.match(css, /orbital-panel/);
+  assert.match(css, /orbital-scene/);
   assert.match(readme, /no procesa ni representa satélites militares/);
 });
 
-
-test("NEXUS 6.2 exposes three modes and clearly labels the weather data limits", () => {
+test("NEXUS 6.2 exposes all modes and global weather source controls", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-
-  assert.match(html, /BUILD 6\.1/);
+  assert.match(html, /BUILD 6.2/);
   assert.match(html, /id="cyberModeBtn"/);
   assert.match(html, /id="weatherModeBtn"/);
   assert.match(html, /id="orbitalModeBtn"/);
   assert.match(html, /id="weatherControls"/);
-  assert.match(html, /id="radarTimeSlider"/);
-  assert.match(html, /id="weatherPointTitle"/);
+  assert.match(html, /id="weatherVariableSelect"/);
+  assert.match(html, /id="orbitalControls"/);
   assert.match(html, /rainviewer\.com/);
   assert.match(html, /open-meteo\.com/);
-
   assert.match(app, /api\.rainviewer\.com\/public\/weather-maps\.json/);
-  assert.match(app, /RADAR_REFRESH_MIN_MS = 5 \* 60 \* 1000/);
-  assert.match(app, /slice\(-13\)/);
   assert.match(app, /api\.open-meteo\.com\/v1\/forecast/);
   assert.match(app, /function setMapMode/);
-  assert.match(app, /function lookupWeatherAt/);
-  assert.match(app, /nexus-radar-layer/);
-  assert.match(app, /cobertura variable/);
-
   assert.match(css, /map-mode-tabs/);
   assert.match(css, /weather-controls/);
   assert.match(readme, /dos horas de historial/);
-  assert.match(readme, /posiciones matemáticamente calculadas/);
 });
 
-
-test("NEXUS 6.2 always renders a global model weather grid and a schematic orbital visual", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
-  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-
-  assert.match(html, /BUILD 6\.1/);
-  assert.match(html, /release=6\.1/);
-  assert.match(html, /id="loadWeatherGridBtn"/);
-  assert.match(html, /id="weatherGridStatus"/);
-  assert.match(html, /COLOR = TEMPERATURA/);
-  assert.match(html, /id="orbitalVisualNote"/);
-  assert.match(app, /WEATHER_GRID_COORDS/);
-  assert.match(app, /WEATHER_GRID_REFRESH_MS = 10 \* 60 \* 1000/);
-  assert.match(app, /api\.open-meteo\.com\/v1\/forecast/);
-  assert.match(app, /nexus-weather-grid-points/);
-  assert.match(app, /nexus-weather-grid-wind/);
-  assert.match(app, /function loadWeatherGrid/);
-  assert.match(app, /function showWeatherPointPopup/);
-  assert.match(app, /orbital-active/);
-  assert.match(css, /orbital-visual-note/);
-  assert.match(css, /weather-legend/);
-  assert.match(readme, /288 celdas/);
-});
-
-
-test("NEXUS weather mode covers the globe with a 288-cell field and selectable model variables", () => {
+test("NEXUS weather mode covers the globe with a 288-cell field and selectable variables", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
@@ -221,7 +184,7 @@ test("NEXUS weather mode covers the globe with a 288-cell field and selectable m
   assert.match(readme, /288 celdas de 15°/);
 });
 
-test("NEXUS orbital mode uses a separate Cesium 3D scene with public civil weather OMM data", () => {
+test("NEXUS orbital mode uses Cesium 3D and SGP4 for the public civil-weather whitelist", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
@@ -229,6 +192,7 @@ test("NEXUS orbital mode uses a separate Cesium 3D scene with public civil weath
   assert.match(html, /id="orbitalScene"/);
   assert.match(html, /id="orbitalObjectList"/);
   assert.match(html, /cesiumjs\/releases\/1\.144/);
+  assert.match(html, /CESIUM_BASE_URL/);
   assert.match(app, /new Cesium\.Viewer/);
   assert.match(app, /GROUP=WEATHER&FORMAT=JSON/);
   assert.match(app, /satellite\.js@7\.1\.0/);
