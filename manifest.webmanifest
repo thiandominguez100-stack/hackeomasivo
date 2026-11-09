@@ -4,7 +4,7 @@
   "short_name": "NEXUS",
   "description": "Observatorio global de ciberseguridad, meteorología y contexto orbital con fuentes públicas.",
   "lang": "es-AR",
-  "start_url": "./?release=6.2",
+  "start_url": "./?release=6.3",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
