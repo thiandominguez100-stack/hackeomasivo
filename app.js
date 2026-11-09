@@ -941,6 +941,7 @@
         maximumLevel: 18,
         credit: "© OpenStreetMap contributors"
       }));
+      orbitalViewer.resolutionScale = 0.88;
       orbitalViewer.scene.globe.enableLighting = true;
       orbitalViewer.scene.globe.showGroundAtmosphere = true;
       orbitalViewer.scene.screenSpaceCameraController.minimumZoomDistance = 720000;
@@ -968,6 +969,19 @@
     if (!geodetic || !Number.isFinite(geodetic.latitude) ||
         !Number.isFinite(geodetic.longitude) || !Number.isFinite(geodetic.height)) return null;
     return geodetic;
+  }
+
+  function pauseOrbitalUpdates() {
+    if (orbitalTickHandle) {
+      window.clearInterval(orbitalTickHandle);
+      orbitalTickHandle = null;
+    }
+  }
+
+  function startOrbitalUpdates() {
+    if (orbitalTickHandle || !orbitalSatellites.length) return;
+    updateOrbitalPositions();
+    orbitalTickHandle = window.setInterval(updateOrbitalPositions, 5000);
   }
 
   function updateOrbitalPositions() {
@@ -1107,9 +1121,7 @@
         });
     }
     orbitalTrailRefreshAt = Date.now();
-    updateOrbitalPositions();
-    if (orbitalTickHandle) window.clearInterval(orbitalTickHandle);
-    orbitalTickHandle = window.setInterval(updateOrbitalPositions, 5000);
+    startOrbitalUpdates();
     if (orbitalSatellites.length) {
       orbitalViewer.flyTo(orbitalSatellites.map((item) => item.entity), { duration: 1.6 }).catch(() => {});
     }
@@ -1272,6 +1284,8 @@
     }
 
     if (!weatherActive) { pauseRadarPlayback(); pauseWeatherForecast(); }
+    if (orbitalActive) startOrbitalUpdates();
+    else pauseOrbitalUpdates();
     const heading = $("mapHeading");
     const annotation = $("mapAnnotation");
     const footLeft = $("mapFootLeft");
