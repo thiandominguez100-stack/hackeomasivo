@@ -48,9 +48,10 @@
   const RADAR_METADATA_URL = "https://api.rainviewer.com/public/weather-maps.json";
   const RADAR_REFRESH_MIN_MS = 5 * 60 * 1000;
   const WEATHER_CURRENT_FIELDS = [
-    "temperature_2m", "apparent_temperature", "relative_humidity_2m", "dew_point_2m",
-    "cloud_cover", "precipitation", "rain", "snowfall", "pressure_msl",
-    "wind_speed_10m", "wind_direction_10m", "weather_code"
+    "temperature_2m", "apparent_temperature", "relative_humidity_2m",
+    "cloud_cover", "precipitation", "rain", "showers", "snowfall",
+    "pressure_msl", "surface_pressure", "wind_speed_10m", "wind_direction_10m",
+    "wind_gusts_10m", "weather_code", "is_day"
   ].join(",");
   const WEATHER_GRID_COORDS = [];
   for (let latitude = -82.5; latitude <= 82.5; latitude += 15) {
@@ -436,6 +437,7 @@
     }
     if (mapReady && map && map.getLayer("nexus-weather-cells-fill")) {
       map.setPaintProperty("nexus-weather-cells-fill", "fill-color", expression);
+      map.setFilter("nexus-weather-cells-fill", ["has", visual.property]);
       map.setLayoutProperty("nexus-weather-grid-wind", "visibility", activeWeatherVariable === "wind" ? "visible" : "none");
       map.setLayoutProperty("nexus-weather-grid-points", "visibility", "visible");
       map.triggerRepaint();
@@ -463,7 +465,7 @@
       button.disabled = true;
       safeText(button, "CARGANDO MODELO…");
     }
-    safeText($("weatherGridStatus"), "Descargando el modelo global · 288 ubicaciones · 12 variables…");
+    safeText($("weatherGridStatus"), "Descargando el modelo global · 288 ubicaciones · 15 variables…");
 
     try {
       const query = new URLSearchParams({
@@ -501,15 +503,18 @@
           temperature: numberOrNull(current.temperature_2m),
           feelsLike: numberOrNull(current.apparent_temperature),
           humidity: numberOrNull(current.relative_humidity_2m),
-          dewPoint: numberOrNull(current.dew_point_2m),
           cloudCover: numberOrNull(current.cloud_cover),
           precipitation: numberOrNull(current.precipitation),
           rain: numberOrNull(current.rain),
+          showers: numberOrNull(current.showers),
           snowfall: numberOrNull(current.snowfall),
           pressure: numberOrNull(current.pressure_msl),
+          surfacePressure: numberOrNull(current.surface_pressure),
           windSpeed: numberOrNull(current.wind_speed_10m),
           windDirection: numberOrNull(current.wind_direction_10m),
+          windGusts: numberOrNull(current.wind_gusts_10m),
           weatherCode: numberOrNull(current.weather_code),
+          isDay: numberOrNull(current.is_day),
           time: String(current.time || "")
         };
         if (record.temperature === null) return;
@@ -518,18 +523,24 @@
           temperature: record.temperature,
           feelsLike: record.feelsLike,
           humidity: record.humidity,
-          dewPoint: record.dewPoint,
           cloudCover: record.cloudCover,
           precipitation: record.precipitation,
           rain: record.rain,
+          showers: record.showers,
           snowfall: record.snowfall,
           pressure: record.pressure,
+          surfacePressure: record.surfacePressure,
           windSpeed: record.windSpeed,
           windDirection: record.windDirection,
           windArrow: windArrow(record.windDirection),
+          windGusts: record.windGusts,
           weatherCode: record.weatherCode,
+          isDay: record.isDay,
           time: record.time
         };
+        Object.keys(properties).forEach((key) => {
+          if (properties[key] === null || properties[key] === undefined) delete properties[key];
+        });
         pointFeatures.push({
           type: "Feature",
           properties,
@@ -556,7 +567,7 @@
       safeText($("weatherGridStatus"), cellFeatures.length + " celdas de modelo cubriendo la esfera · " +
         (records[0].time ? dateLabel(records[0].time + "Z") : "hora no disponible") +
         " · actualización automática cada 30 min");
-      safeText($("mapStatus"), "Modelo mundial cargado · " + cellFeatures.length + " celdas · 12 variables disponibles");
+      safeText($("mapStatus"), "Modelo mundial cargado · " + cellFeatures.length + " celdas · 15 variables disponibles");
       applyWeatherVariable(activeWeatherVariable);
       map.triggerRepaint();
     } catch (error) {
@@ -581,13 +592,17 @@
       ["Temperatura", displayNumber(p.temperature, 1, " °C")],
       ["Sensación térmica", displayNumber(p.feelsLike, 1, " °C")],
       ["Humedad relativa", displayNumber(p.humidity, 0, " %")],
-      ["Punto de rocío", displayNumber(p.dewPoint, 1, " °C")],
       ["Nubosidad", displayNumber(p.cloudCover, 0, " %")],
       ["Precipitación", displayNumber(p.precipitation, 1, " mm")],
       ["Lluvia", displayNumber(p.rain, 1, " mm")],
+      ["Chubascos", displayNumber(p.showers, 1, " mm")],
       ["Nieve", displayNumber(p.snowfall, 1, " cm")],
-      ["Presión", displayNumber(p.pressure, 0, " hPa")],
+      ["Presión a nivel del mar", displayNumber(p.pressure, 0, " hPa")],
+      ["Presión de superficie", displayNumber(p.surfacePressure, 0, " hPa")],
       ["Viento", displayNumber(p.windSpeed, 1, " km/h") + " · " + windDirectionLabel(p.windDirection)],
+      ["Ráfagas", displayNumber(p.windGusts, 1, " km/h")],
+      ["Código WMO", displayNumber(p.weatherCode, 0)],
+      ["Día/noche", Number(p.isDay) === 1 ? "Día" : Number(p.isDay) === 0 ? "Noche" : "—"],
       ["Hora del modelo", p.time || "No disponible"]
     ];
     const node = popupNode("Celda de modelo meteorológico", lines,
