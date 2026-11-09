@@ -1,4 +1,4 @@
-# NEXUS 6.0 — Global Earth Intelligence
+# NEXUS 6.1 — Global Earth Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -52,6 +52,8 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 ## NEXUS 6.0: Cyber, Global Weather y Orbital
 
 ### Global Weather
+- La vista global dibuja una malla de referencia de 24 coordenadas repartidas entre latitudes y longitudes. Los colores representan temperatura estimada por Open-Meteo; las flechas representan dirección del viento del modelo. Es una muestra visual, no una cuadrícula de observaciones de estaciones ni una medición homogénea de todo el planeta.
+- La malla se actualiza como máximo cada diez minutos desde el navegador y puede actualizarse manualmente. Cada punto conserva la hora de validez devuelta por el proveedor.
 - El modo meteorológico agrega un reproductor de cuadros de radar de precipitación de RainViewer. La API pública ofrece hasta dos horas de historial en intervalos de diez minutos; desde enero de 2026 no ofrece nowcast gratuito ni imágenes satelitales infrarrojas. La cobertura depende de los radares que cada proveedor local comparte y no es uniforme a escala planetaria.
 - La línea de tiempo anima únicamente los cuadros pasados disponibles. No muestra una predicción ni debe describirse como una imagen meteorológica global completa.
 - Al seleccionar un punto del mapa, NEXUS consulta Open-Meteo para temperatura, sensación térmica, viento, humedad, nubosidad y precipitación actuales según el modelo disponible. Son estimaciones de modelo con hora de referencia, no mediciones de estación en vivo.
