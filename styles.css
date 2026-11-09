@@ -48,7 +48,31 @@ header{height:72px;display:flex;align-items:center;justify-content:space-between
 .legend-circle{display:inline-block;width:10px;height:10px;border-radius:50%;background:#f6a84f;box-shadow:0 0 10px #f6a84f88}
 #map{height:550px;border-radius:8px;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#0c2e4a 0%,#061527 58%,#020711 100%);border:1px solid #24495f;box-shadow:inset 0 0 42px #1b6b8a24,0 0 24px #07111d}
 #map .maplibregl-canvas{border-radius:8px}
+.map-mode-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:2px 0 11px}
+.mode-tab{border:1px solid #2d4a5d;border-radius:8px;padding:10px 8px;background:#0a1a27;color:#91aabc;font:9px 'DM Mono';letter-spacing:.8px;cursor:pointer;transition:background .18s,border-color .18s,color .18s}
+.mode-tab:hover{border-color:#4a8399;color:#d8f4f7}
+.mode-tab.active{border-color:#44b9c9;background:linear-gradient(110deg,#12394b,#10414a);color:#a4f3f4;box-shadow:inset 0 0 16px #39c5dc16}
+.weather-controls{display:grid;gap:11px;margin:10px 0;padding:13px;border:1px solid #285466;border-radius:10px;background:linear-gradient(145deg,#102c3a,#0a1a27)}
+.weather-controls[hidden],.city-jump-control[hidden]{display:none!important}
+.weather-control-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.weather-control-head h3,.weather-point-card h3{margin:4px 0 0;color:#e2f5fa;font-size:12px;letter-spacing:-.1px}
+.weather-control-head label,.weather-point-card label{color:#83aabb;font:8px 'DM Mono';letter-spacing:1px}
+.small-action{border:1px solid #3b7184;border-radius:7px;padding:8px 10px;background:#0d2734;color:#a8eaf0;font:8px 'DM Mono';letter-spacing:.55px;white-space:nowrap;cursor:pointer}
+.small-action:hover:not(:disabled){background:#123a49;border-color:#57c5d2}
+.small-action:disabled{opacity:.45;cursor:not-allowed}
+.radar-player{display:grid;grid-template-columns:auto minmax(100px,1fr) minmax(105px,auto);align-items:center;gap:10px}
+.radar-player input[type=range]{width:100%;accent-color:#54d1df;cursor:pointer}
+.radar-frame-time{color:#b8dce5;text-align:right;font:8px 'DM Mono';font-variant-numeric:tabular-nums}
+.weather-point-card{padding:11px;border:1px solid #284c5c;border-radius:8px;background:#081a26}
+.weather-point-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:11px}
+.weather-point-grid span{display:block;color:#7895a6;font:7px 'DM Mono';letter-spacing:.45px}
+.weather-point-grid b{display:block;margin-top:4px;color:#e1f1f5;font:600 12px 'DM Mono';font-variant-numeric:tabular-nums;letter-spacing:0}
+.weather-disclaimer{margin:0;color:#839dab;font-size:8px;line-height:1.55}
+.weather-disclaimer a{color:#93dbe5;text-decoration:none}
+.city-jump-control{display:flex;align-items:center;gap:10px}
 .orbital-panel{margin-top:13px}
+.orbital-panel.mode-focus{border-color:#4a9daf;box-shadow:0 0 0 1px #4a9daf30,0 0 24px #2e99a61a}
+@media(max-width:620px){.map-mode-tabs{gap:5px}.mode-tab{font-size:7px;padding:9px 3px;letter-spacing:.35px}.weather-control-head{align-items:flex-start;flex-direction:column}.radar-player{grid-template-columns:1fr auto}.radar-player input[type=range]{grid-column:1/-1;grid-row:2}.radar-frame-time{text-align:right}.weather-point-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.city-jump-control{align-items:flex-start;flex-direction:column;gap:6px}.city-jump-control select{width:100%}}
 .orbital-facts{display:grid;gap:0}
 .orbital-facts>div{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid #1b3343}
 .orbital-facts span{color:#7f9aaa;font:8px 'DM Mono';letter-spacing:.5px}
