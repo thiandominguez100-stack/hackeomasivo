@@ -32,7 +32,7 @@ NEXUS conserva títulos, fuente, fecha y enlace oficial. No copia cuerpos de art
 
 No hace falta Firebase, servidor propio, claves API ni credenciales para estas fuentes. La recolección se ejecuta en GitHub Actions, no en el navegador del visitante.
 
-## NEXUS 5.0: precisión geográfica y explorador de evidencia
+## Precisión geográfica y explorador de evidencia
 
 - El mapa deja de mostrar los marcadores nacionales cuando el zoom supera 5.2. Esos puntos son centroides nacionales y podrían parecer ubicaciones locales al acercar la vista.
 - El popup de cada país explica que el punto corresponde al país de registro de red/ASN, no al lugar de un incidente.
@@ -41,7 +41,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El recolector mantiene `data/publications-history.json`: hasta 2.000 publicaciones oficiales, deduplicadas y con retención de 365 días. El explorador combina el archivo con el snapshot reciente y muestra hasta 100 resultados por consulta.
 - El archivo conserva solo título, fuente, tipo, fecha y enlace HTTPS oficial. Es un historial de publicaciones, no un registro exhaustivo de incidentes confirmados.
 
-## NEXUS 5.1: planeta a color y contexto orbital
+## Planeta a color y contexto orbital
 
 - El globo usa el estilo Liberty de OpenFreeMap y el efecto de atmósfera de MapLibre para mostrar continentes, océanos y halo atmosférico con mayor contraste.
 - La sección orbital explica las limitaciones de los catálogos públicos y enlaza a la documentación oficial de CelesTrak.
