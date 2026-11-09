@@ -176,7 +176,12 @@ test("NEXUS weather mode covers the globe with a 288-cell field and selectable v
   assert.match(app, /longitude = -172\.5/);
   assert.match(app, /id: "nexus-weather-cells-fill"/);
   assert.match(app, /nexus-weather-cells/);
-  assert.match(app, /temperature_2m.*dew_point_2m/s);
+  assert.match(app, /temperature_2m.*relative_humidity_2m/s);
+  assert.match(app, /wind_gusts_10m/);
+  assert.match(app, /surface_pressure/);
+  assert.match(app, /showers/);
+  assert.match(app, /is_day/);
+  assert.doesNotMatch(app, /dew_point_2m/);
   assert.match(app, /pressure_msl/);
   assert.match(app, /function applyWeatherVariable/);
   assert.match(app, /30 \* 60 \* 1000/);
