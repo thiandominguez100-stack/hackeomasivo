@@ -233,6 +233,8 @@ test("NEXUS 6.3 adds a 24-hour global weather forecast timeline", () => {
   assert.match(app, /cloud_cover_low/);
   assert.match(app, /soil_moisture_0_to_7cm/);
   assert.match(app, /function applyWeatherForecastFrame/);
+  assert.match(app, /function formatWeatherTime/);
+  assert.match(app, /raw \+ "Z"/);
   assert.match(app, /weatherPlaybackHandle/);
   assert.match(app, /function pauseWeatherForecast/);
   assert.match(app, /orbitalViewer\.forceResize\(\)/);
