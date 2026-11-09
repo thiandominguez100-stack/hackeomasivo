@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111b">
   <meta name="description" content="NEXUS: observatorio global de ciberseguridad, meteorología y contexto orbital mediante fuentes públicas.">
-  <title>NEXUS 6.1 — Global Earth Intelligence</title>
+  <title>NEXUS 6.2 — Global Earth Intelligence</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/favicon.svg">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css">
   <link rel="stylesheet" href="./styles.css?v=17">
 </head>
 <body>
 <div class="shell">
   <header>
-    <a class="brand" href="./?release=6.1" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
+    <a class="brand" href="./?release=6.2" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
     <div class="header-right">
       <div class="status-pill" id="overallStatus"><i></i><span>Conectando fuentes</span></div>
       <span class="utc-clock" id="clock">--:--:-- UTC</span>
@@ -24,7 +24,7 @@
 
   <section class="hero">
     <div>
-      <label class="eyebrow">CYBER · WEATHER · ORBITAL · BUILD 6.1</label>
+      <label class="eyebrow">CYBER · WEATHER · ORBITAL · BUILD 6.2</label>
       <h1>Global <em>Earth Intelligence</em> Observatory</h1>
       <p>Observación defensiva, meteorología mundial y contexto espacial con fuentes públicas verificables.</p>
     </div>
@@ -83,28 +83,36 @@
         <button id="orbitalModeBtn" class="mode-tab" type="button" aria-pressed="false">ORBITAL</button>
       </div>
       <div id="mapAnnotation" class="map-annotation"><span class="legend-circle"></span> País de registro de red · centroide aproximado · no localiza incidentes ni víctimas</div>
-      <div id="map" role="img" aria-label="Globo 3D del observatorio global con capas meteorológicas, cibernéticas y contexto orbital">
-        <div id="orbitalVisualNote" class="orbital-visual-note" hidden>ANILLOS ILUSTRATIVOS · NO SON TRAYECTORIAS REALES</div>
-      </div>
+      <div id="map" role="img" aria-label="Globo 3D con campos meteorológicos y datos cibernéticos agregados"></div>
+      <div id="orbitalScene" class="orbital-scene" hidden aria-label="Globo 3D con satélites civiles meteorológicos"></div>
       <div id="weatherControls" class="weather-controls" hidden>
         <div class="weather-control-head">
-          <div><label>PRECIPITACIÓN OBSERVADA</label><h3>Radar meteorológico · últimas 2 horas</h3></div>
+          <div><label>ANÁLISIS METEOROLÓGICO GLOBAL</label><h3>Campos atmosféricos sobre todo el planeta</h3></div>
           <div class="weather-button-row">
+            <label class="weather-select-label" for="weatherVariableSelect">CAPA</label>
+            <select id="weatherVariableSelect" class="weather-variable-select">
+              <option value="temperature">Temperatura</option>
+              <option value="precipitation">Precipitación</option>
+              <option value="wind">Viento</option>
+              <option value="humidity">Humedad</option>
+              <option value="clouds">Nubosidad</option>
+              <option value="pressure">Presión</option>
+            </select>
             <button id="loadWeatherGridBtn" class="small-action" type="button">ACTUALIZAR MODELO</button>
             <button id="loadRadarBtn" class="small-action" type="button">ACTUALIZAR RADAR</button>
           </div>
         </div>
         <div class="radar-player">
-          <button id="radarPlayBtn" class="small-action play-action" type="button" disabled>▶ REPRODUCIR</button>
+          <button id="radarPlayBtn" class="small-action play-action" type="button" disabled>▶ REPRODUCIR RADAR</button>
           <input id="radarTimeSlider" type="range" min="0" max="0" value="0" step="1" disabled aria-label="Elegir momento del radar">
-          <span id="radarFrameTime" class="radar-frame-time">Cargando radar…</span>
+          <span id="radarFrameTime" class="radar-frame-time">Radar opcional · cobertura variable</span>
         </div>
         <div class="weather-legend">
-          <span><i class="legend-temp"></i> COLOR = TEMPERATURA</span>
-          <span>FLECHA = DIRECCIÓN DEL VIENTO</span>
-          <span>24 PUNTOS DE MODELO</span>
+          <span><i class="legend-temp"></i> COLOR = <b id="weatherLegendLabel">TEMPERATURA</b></span>
+          <span>CUADRÍCULA DE MODELO GLOBAL · 15°</span>
+          <span id="weatherCoverageCount">288 CELDAS MÁXIMO</span>
         </div>
-        <p id="weatherGridStatus" class="weather-grid-status">Preparando malla meteorológica global…</p>
+        <p id="weatherGridStatus" class="weather-grid-status">Preparando campos meteorológicos globales…</p>
         <div class="weather-point-card" aria-live="polite">
           <div><label>CONSULTA EN EL MAPA</label><h3 id="weatherPointTitle">Seleccioná un punto del planeta</h3></div>
           <div class="weather-point-grid">
@@ -118,6 +126,20 @@
           <p id="weatherPointUpdated" class="method-note">Open‑Meteo · condiciones actuales estimadas por modelo · elegí una ubicación</p>
         </div>
         <p class="weather-disclaimer">El radar muestra únicamente zonas con cobertura disponible y hasta 2 horas de historial; no es un pronóstico. La consulta puntual usa datos de modelo y puede tener retraso. <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">Radar: RainViewer</a> · <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Modelo: Open‑Meteo</a>.</p>
+      </div>
+      <div id="orbitalControls" class="orbital-controls" hidden>
+        <div class="orbital-control-head">
+          <div><label>ÓRBITAS CIVILES · DATOS OMM</label><h3>Satélites meteorológicos y de observación de la Tierra</h3></div>
+          <button id="loadOrbitalBtn" class="small-action" type="button">ACTUALIZAR CATÁLOGO</button>
+        </div>
+        <div class="orbital-stats">
+          <span>OBJETOS VISIBLES <b id="orbitalCount">—</b></span>
+          <span>PROPAGACIÓN <b id="orbitalPropagation">SGP4 / OMM</b></span>
+          <span>ÚLTIMA ACTUALIZACIÓN <b id="orbitalUpdated">—</b></span>
+        </div>
+        <p id="orbitalStatus" class="weather-grid-status">Al entrar se cargarán elementos orbitales públicos y se calcularán posiciones estimadas.</p>
+        <div id="orbitalObjectList" class="orbital-object-list"><span class="empty-state">Catálogo pendiente.</span></div>
+        <p class="weather-disclaimer">Solo misiones civiles meteorológicas y de observación pública incluidas en el filtro de NEXUS. Las posiciones son cálculos SGP4 basados en elementos orbitales publicados, no telemetría GPS en vivo; no se incluyen objetos militares o estratégicos. Fuente: <a href="https://celestrak.org/NORAD/elements/gp.php?GROUP=WEATHER&FORMAT=JSON" target="_blank" rel="noopener noreferrer">CelesTrak Weather OMM</a>.</p>
       </div>
       <div class="map-tools">
         <div class="city-jump-control" id="cityJumpControl">
@@ -160,9 +182,9 @@
           <div><span>DATOS DISPONIBLES</span><b>Elementos orbitales GP / OMM</b></div>
           <div><span>FRECUENCIA DE REFERENCIA</span><b>Consulta recomendada: cada 2 horas</b></div>
           <div><span>COBERTURA</span><b>Parcial · puede haber objetos sin identificar</b></div>
-          <div><span>VISTA NEXUS</span><b>Contexto agregado · sin rastreo individual</b></div>
+          <div><span>VISTA NEXUS</span><b>Satélites civiles meteorológicos seleccionados</b></div>
         </div>
-        <p class="method-note">Las posiciones orbitales calculadas no son mediciones GPS en vivo. NEXUS no promete identificar todos los objetos ni muestra trayectorias precisas de satélites individuales.</p>
+        <p class="method-note">NEXUS calcula posiciones aproximadas con SGP4 a partir de elementos OMM publicados. La selección excluye satélites militares y estratégicos; el catálogo público puede tener huecos y retrasos.</p>
         <a class="text-link" href="https://celestrak.org/satcat/boxscore.php" target="_blank" rel="noopener noreferrer">Resumen agregado del catálogo SATCAT ↗</a>
         <a class="text-link" href="https://celestrak.org/NORAD/documentation/gp-data-formats.php" target="_blank" rel="noopener noreferrer">Documentación de elementos orbitales ↗</a>
       </div>
@@ -231,11 +253,13 @@
   </section>
 
   <footer>
-    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.1</span>
+    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.2</span>
     <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></span>
   </footer>
 </div>
-<script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
-<script src="./app.js?v=17"></script>
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+<script>window.CESIUM_BASE_URL = "https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/";</script>
+<script src="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/Cesium.js"></script>
+<script src="./app.js?v=18"></script>
 </body>
 </html>
