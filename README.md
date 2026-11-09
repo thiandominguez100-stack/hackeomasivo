@@ -1,4 +1,4 @@
-# NEXUS 5.0 — Evidence & Incident Intelligence
+# NEXUS 5.1 — Earth & Orbital Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -40,6 +40,14 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - Una publicación, aviso o investigación no se convierte automáticamente en un incidente confirmado. El explorador no inventa gravedad, víctimas, ubicación ni estado operativo.
 - El recolector mantiene `data/publications-history.json`: hasta 2.000 publicaciones oficiales, deduplicadas y con retención de 365 días. El explorador combina el archivo con el snapshot reciente y muestra hasta 100 resultados por consulta.
 - El archivo conserva solo título, fuente, tipo, fecha y enlace HTTPS oficial. Es un historial de publicaciones, no un registro exhaustivo de incidentes confirmados.
+
+## NEXUS 5.1: planeta a color y contexto orbital
+
+- El globo usa el estilo Liberty de OpenFreeMap y el efecto de atmósfera de MapLibre para mostrar continentes, océanos y halo atmosférico con mayor contraste.
+- La sección orbital explica las limitaciones de los catálogos públicos y enlaza a la documentación oficial de CelesTrak.
+- CelesTrak recomienda espaciar las consultas GP aproximadamente cada dos horas. Los elementos orbitales son datos para calcular posiciones estimadas; no son una señal GPS ni una medición continua.
+- El catálogo público no equivale a todos los objetos que existen: algunos satélites pequeños pueden tardar en identificarse y otros pueden no quedar identificados.
+- NEXUS muestra contexto orbital agregado y no ofrece rastreo preciso, trayectorias ni identificación individual de satélites estratégicos.
 
 ## Cómo interpretar los datos
 
