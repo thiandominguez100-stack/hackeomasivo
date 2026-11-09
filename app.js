@@ -906,7 +906,9 @@
 
   function initOrbitalViewer() {
     if (orbitalViewer) {
-      window.setTimeout(() => orbitalViewer && orbitalViewer.resize(), 80);
+      window.setTimeout(() => {
+        if (orbitalViewer) { orbitalViewer.forceResize(); orbitalViewer.scene.requestRender(); }
+      }, 100);
       return true;
     }
     if (!window.Cesium || !$("orbitalScene")) {
@@ -1303,7 +1305,9 @@
       safeText(footRight, "ÓRBITAS ESTIMADAS · NO TELEMETRÍA GPS EN VIVO");
       initOrbitalViewer();
       loadOrbitalCatalog();
-      window.setTimeout(() => orbitalViewer && orbitalViewer.resize(), 120);
+      window.setTimeout(() => {
+        if (orbitalViewer) { orbitalViewer.forceResize(); orbitalViewer.scene.requestRender(); }
+      }, 180);
     }
   }
 
@@ -1507,7 +1511,7 @@
       $("buildingToggle").checked = hasBuildings;
       const updateMapScaleNotice = () => {
         if (activeMapMode === "weather") {
-          safeText($("mapStatus"), "Radar de lluvia · historial reciente · cobertura variable");
+          safeText($("mapStatus"), "Pronóstico global · campos meteorológicos por hora · " + weatherForecastTimes.length + " pasos disponibles");
           return;
         }
         if (activeMapMode === "orbital") {
