@@ -93,7 +93,7 @@ test("interface includes the eight-source health list", () => {
 });
 
 
-test("NEXUS 5.0 warns that country markers are national centroids and hides them at local zoom", () => {
+test("NEXUS 6.0 warns that country markers are national centroids and hides them at local zoom", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   assert.match(html, /centroide nacional aproximado/);
@@ -131,8 +131,8 @@ test("NEXUS 6.0 retains the colored globe and explains orbital data limits", () 
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 5\.1/);
-  assert.match(html, /release=5\.1/);
+  assert.match(html, /BUILD 6\.0/);
+  assert.match(html, /release=6\.0/);
   assert.match(html, /Contexto orbital/);
   assert.match(html, /celestrak\.org\/NORAD\/documentation\/gp-data-formats\.php/);
   assert.match(app, /styles\/liberty/);
