@@ -271,3 +271,10 @@ footer a{color:#7cabb9}
 @media(max-width:900px){.satellite-control-head{align-items:flex-start;flex-direction:column}.satellite-layer-row{justify-content:flex-start}}
 @media(max-width:720px){.map-mode-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.satellite-timeline{grid-template-columns:1fr 1fr}.satellite-timeline input[type=range]{grid-column:1 / -1;grid-row:2}.satellite-timeline .radar-frame-time{justify-self:end}.satellite-date-tools{grid-template-columns:auto 1fr}.satellite-date-tools input[type=range]{grid-column:1 / -1}}
 @media(max-width:420px){.satellite-timeline{grid-template-columns:1fr}.satellite-timeline input[type=range]{grid-column:auto;grid-row:auto}.satellite-timeline .radar-frame-time{justify-self:start}.satellite-date-tools{grid-template-columns:1fr}.satellite-date-tools input[type=range]{grid-column:auto}.satellite-layer-select{width:100%;min-width:0}}
+
+
+/* NEXUS 6.4.1 — orbital Earth visibility and camera controls */
+.orbital-action-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:flex-end}
+.orbital-surface-status{margin:0;padding:8px 10px;border:1px solid #28566a;border-radius:7px;background:#081a27;color:#a9e1e8;font:8px 'DM Mono';letter-spacing:.45px;line-height:1.5}
+.orbital-surface-status::before{content:"●";color:#5bdfae;margin-right:7px}
+@media(max-width:900px){.orbital-action-row{justify-content:flex-start}}
