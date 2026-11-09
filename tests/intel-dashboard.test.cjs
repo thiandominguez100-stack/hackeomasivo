@@ -239,5 +239,5 @@ test("NEXUS 6.3 adds a 24-hour global weather forecast timeline", () => {
   assert.match(app, /refreshTrails/);
   assert.match(css, /weather-forecast-player/);
   assert.match(css, /orbital-visibility-toggles/);
-  assert.match(readme, /pronóstico de 24 horas/);
+  assert.match(readme, /siguientes 24 horas/);
 });
