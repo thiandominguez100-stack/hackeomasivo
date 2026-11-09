@@ -200,3 +200,13 @@ test("NEXUS 6.1 always renders a global model weather grid and a schematic orbit
   assert.match(css, /weather-legend/);
   assert.match(readme, /malla de referencia de 24 coordenadas/);
 });
+
+
+test("NEXUS weather mode renders a visible heatmap and refreshes the map viewport", () => {
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  assert.match(app, /id: "nexus-weather-heatmap"/);
+  assert.match(app, /"heatmap-radius"/);
+  assert.match(app, /nexus-weather-heatmap.*nexus-weather-grid-points/s);
+  assert.match(app, /map\.resize\(\)/);
+  assert.match(app, /map\.triggerRepaint\(\)/);
+});
