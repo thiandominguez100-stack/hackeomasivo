@@ -167,7 +167,7 @@ test("NEXUS 6.0 exposes three modes and clearly labels the weather data limits",
   assert.match(app, /function setMapMode/);
   assert.match(app, /function lookupWeatherAt/);
   assert.match(app, /nexus-radar-layer/);
-  assert.match(app, /sin cobertura/);
+  assert.match(app, /cobertura variable/);
 
   assert.match(css, /map-mode-tabs/);
   assert.match(css, /weather-controls/);
