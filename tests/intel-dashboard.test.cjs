@@ -254,8 +254,8 @@ test("NEXUS 6.4 keeps Cesium and its worker modules from the same pinned CDN", (
   const sw = fs.readFileSync(path.join(__dirname, "../sw.js"), "utf8");
   assert.match(html, /window\.CESIUM_BASE_URL = "https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\//);
   assert.match(html, /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\/Cesium\.js"><\/script>/);
-  assert.match(html, /app\.js\?v=22/);
-  assert.match(sw, /nexus-shell-v22/);
+  assert.match(html, /app\.js\?v=23/);
+  assert.match(sw, /nexus-shell-v23/);
 });
 
 
