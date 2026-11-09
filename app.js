@@ -34,6 +34,20 @@
   let historyItems = [];
   let installPrompt = null;
   let refreshInProgress = false;
+  let activeMapMode = "cyber";
+  let radarFrames = [];
+  let radarHost = "";
+  let radarFetchedAt = 0;
+  let radarLoading = false;
+  let radarPlayback = null;
+  let weatherRequestController = null;
+
+  const RADAR_METADATA_URL = "https://api.rainviewer.com/public/weather-maps.json";
+  const RADAR_REFRESH_MIN_MS = 5 * 60 * 1000;
+  const WEATHER_CURRENT_FIELDS = [
+    "temperature_2m", "apparent_temperature", "relative_humidity_2m",
+    "cloud_cover", "precipitation", "wind_speed_10m", "wind_direction_10m"
+  ].join(",");
 
   function safeText(node, value) {
     node.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
@@ -364,6 +378,262 @@
     return root;
   }
 
+  function windDirectionLabel(degrees) {
+    if (!Number.isFinite(Number(degrees))) return "—";
+    const labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    return labels[Math.round(((Number(degrees) % 360) + 360) % 360 / 45) % 8];
+  }
+
+  function displayNumber(value, digits = 0, suffix = "") {
+    const number = Number(value);
+    return Number.isFinite(number) ? number.toFixed(digits) + suffix : "—";
+  }
+
+  function pauseRadarPlayback() {
+    if (radarPlayback) {
+      window.clearInterval(radarPlayback);
+      radarPlayback = null;
+    }
+    const button = $("radarPlayBtn");
+    if (button) safeText(button, "▶ REPRODUCIR");
+  }
+
+  function radarTileUrl(frame) {
+    return radarHost + frame.path + "/256/{z}/{x}/{y}/2/0_0.png";
+  }
+
+  function showRadarFrame(index) {
+    if (!radarFrames.length || !mapReady) return;
+    const nextIndex = Math.max(0, Math.min(radarFrames.length - 1, Number(index) || 0));
+    const frame = radarFrames[nextIndex];
+    radarFrames.currentIndex = nextIndex;
+    const source = map.getSource("nexus-radar");
+    if (source && typeof source.setTiles === "function") source.setTiles([radarTileUrl(frame)]);
+    const slider = $("radarTimeSlider");
+    if (slider) {
+      slider.max = String(radarFrames.length - 1);
+      slider.value = String(nextIndex);
+      slider.disabled = false;
+    }
+    safeText($("radarFrameTime"), new Date(frame.time * 1000).toLocaleString("es-AR", {
+      timeZone: "UTC", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false
+    }) + " UTC · cuadro " + (nextIndex + 1) + "/" + radarFrames.length);
+  }
+
+  async function loadRadarFrames(force = false) {
+    if (!mapReady || radarLoading) return;
+    if (radarFrames.length && Date.now() - radarFetchedAt < RADAR_REFRESH_MIN_MS) {
+      showRadarFrame(radarFrames.length - 1);
+      safeText($("mapStatus"), "Radar de lluvia · historial reciente · cobertura variable");
+      return;
+    }
+
+    radarLoading = true;
+    const loadButton = $("loadRadarBtn");
+    if (loadButton) {
+      loadButton.disabled = true;
+      safeText(loadButton, "CONSULTANDO…");
+    }
+    safeText($("radarFrameTime"), "Consultando metadatos de radar…");
+
+    try {
+      const response = await fetch(RADAR_METADATA_URL, {
+        method: "GET",
+        cache: "no-store",
+        headers: { "Accept": "application/json" }
+      });
+      if (!response.ok) throw new Error("Radar no disponible (" + response.status + ")");
+      const data = await response.json();
+      const hostUrl = new URL(String(data.host || ""));
+      if (hostUrl.protocol !== "https:" || hostUrl.hostname !== "tilecache.rainviewer.com") {
+        throw new Error("El proveedor devolvió un servidor de mosaicos no reconocido.");
+      }
+      const frames = data && data.radar && Array.isArray(data.radar.past) ? data.radar.past : [];
+      const validFrames = frames.filter((frame) =>
+        Number.isFinite(Number(frame.time)) &&
+        typeof frame.path === "string" &&
+        /^\/v2\/radar\/[A-Za-z0-9]+$/.test(frame.path)
+      ).sort((a, b) => Number(a.time) - Number(b.time)).slice(-13);
+      if (!validFrames.length) throw new Error("El proveedor no publicó cuadros de radar recientes.");
+
+      radarHost = hostUrl.origin;
+      radarFrames = validFrames.map((frame) => ({ time: Number(frame.time), path: frame.path }));
+      radarFetchedAt = Date.now();
+
+      if (!map.getSource("nexus-radar")) {
+        map.addSource("nexus-radar", {
+          type: "raster",
+          tiles: [radarTileUrl(radarFrames[radarFrames.length - 1])],
+          tileSize: 256,
+          minzoom: 0,
+          maxzoom: 7,
+          attribution: "Radar meteorológico © RainViewer"
+        });
+        map.addLayer({
+          id: "nexus-radar-layer",
+          type: "raster",
+          source: "nexus-radar",
+          minzoom: 0,
+          maxzoom: 7,
+          paint: { "raster-opacity": 0.78, "raster-fade-duration": 120 }
+        });
+      } else {
+        showRadarFrame(radarFrames.length - 1);
+      }
+
+      const playButton = $("radarPlayBtn");
+      if (playButton) playButton.disabled = radarFrames.length < 2;
+      showRadarFrame(radarFrames.length - 1);
+      safeText($("mapStatus"), "Radar de lluvia · últimos cuadros disponibles · cobertura variable");
+    } catch (error) {
+      console.warn("NEXUS radar:", error);
+      safeText($("radarFrameTime"), "Radar temporalmente no disponible");
+      safeText($("mapStatus"), "No se pudo cargar el radar; el resto del mapa sigue disponible");
+    } finally {
+      radarLoading = false;
+      if (loadButton) {
+        loadButton.disabled = false;
+        safeText(loadButton, "ACTUALIZAR RADAR");
+      }
+    }
+  }
+
+  async function lookupWeatherAt(coordinates) {
+    if (!coordinates || !Number.isFinite(coordinates.lat) || !Number.isFinite(coordinates.lng)) return;
+    if (weatherRequestController) weatherRequestController.abort();
+    weatherRequestController = new AbortController();
+    const controller = weatherRequestController;
+    const lat = Number(coordinates.lat);
+    const lon = Number(coordinates.lng);
+
+    safeText($("weatherPointTitle"), lat.toFixed(2) + "°, " + lon.toFixed(2) + "°");
+    safeText($("weatherPointUpdated"), "Consultando Open‑Meteo…");
+    ["wxTemp", "wxFeels", "wxWind", "wxHumidity", "wxCloud", "wxRain"].forEach((id) => safeText($(id), "…"));
+
+    const selection = map && map.getSource("nexus-weather-selection");
+    if (selection) {
+      selection.setData({
+        type: "FeatureCollection",
+        features: [{
+          type: "Feature",
+          properties: {},
+          geometry: { type: "Point", coordinates: [lon, lat] }
+        }]
+      });
+    }
+
+    try {
+      const query = new URLSearchParams({
+        latitude: lat.toFixed(4),
+        longitude: lon.toFixed(4),
+        current: WEATHER_CURRENT_FIELDS,
+        wind_speed_unit: "kmh",
+        precipitation_unit: "mm",
+        timezone: "GMT",
+        forecast_days: "1"
+      });
+      const response = await fetch("https://api.open-meteo.com/v1/forecast?" + query.toString(), {
+        method: "GET",
+        cache: "no-store",
+        headers: { "Accept": "application/json" },
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error("Open‑Meteo respondió " + response.status);
+      const data = await response.json();
+      if (controller.signal.aborted) return;
+      const current = data && data.current;
+      if (!current) throw new Error("El proveedor no devolvió condiciones actuales.");
+      const roundedLat = Number.isFinite(Number(data.latitude)) ? Number(data.latitude).toFixed(2) : lat.toFixed(2);
+      const roundedLon = Number.isFinite(Number(data.longitude)) ? Number(data.longitude).toFixed(2) : lon.toFixed(2);
+      safeText($("weatherPointTitle"), roundedLat + "°, " + roundedLon + "°");
+      safeText($("wxTemp"), displayNumber(current.temperature_2m, 1, " °C"));
+      safeText($("wxFeels"), displayNumber(current.apparent_temperature, 1, " °C"));
+      safeText($("wxWind"), displayNumber(current.wind_speed_10m, 1, " km/h") + " · " + windDirectionLabel(current.wind_direction_10m));
+      safeText($("wxHumidity"), displayNumber(current.relative_humidity_2m, 0, " %"));
+      safeText($("wxCloud"), displayNumber(current.cloud_cover, 0, " %"));
+      safeText($("wxRain"), displayNumber(current.precipitation, 1, " mm"));
+      safeText($("weatherPointUpdated"), "Open‑Meteo · modelo meteorológico · " +
+        (current.time ? dateLabel(current.time + "Z") : "hora no disponible") +
+        " · altitud de modelo " + displayNumber(data.elevation, 0, " m"));
+    } catch (error) {
+      if (error && error.name === "AbortError") return;
+      console.warn("NEXUS point weather:", error);
+      safeText($("weatherPointUpdated"), "No se pudieron obtener datos para este punto. Probá otra ubicación.");
+      ["wxTemp", "wxFeels", "wxWind", "wxHumidity", "wxCloud", "wxRain"].forEach((id) => safeText($(id), "—"));
+    }
+  }
+
+  function setMapMode(mode) {
+    if (!["cyber", "weather", "orbital"].includes(mode)) return;
+    activeMapMode = mode;
+    const modes = [
+      ["cyberModeBtn", "cyber"],
+      ["weatherModeBtn", "weather"],
+      ["orbitalModeBtn", "orbital"]
+    ];
+    modes.forEach(([id, value]) => {
+      const button = $(id);
+      if (!button) return;
+      const active = value === mode;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    const weatherActive = mode === "weather";
+    const cyberActive = mode === "cyber";
+    $("weatherControls").hidden = !weatherActive;
+    $("buildingToggle").parentElement.hidden = !cyberActive;
+    $("cityJumpControl").hidden = !cyberActive;
+    $("orbitalPanel").classList.toggle("mode-focus", mode === "orbital");
+    if (map) {
+      ["nexus-country-glow", "nexus-country-points"].forEach((id) => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", cyberActive ? "visible" : "none");
+      });
+      ["nexus-3d-buildings", "nexus-building-footprints"].forEach((id) => {
+        if (map.getLayer(id)) {
+          const show = cyberActive && $("buildingToggle").checked;
+          map.setLayoutProperty(id, "visibility", show ? "visible" : "none");
+        }
+      });
+      if (map.getLayer("nexus-radar-layer")) {
+        map.setLayoutProperty("nexus-radar-layer", "visibility", weatherActive ? "visible" : "none");
+      }
+      if (map.getLayer("nexus-weather-selection-layer")) {
+        map.setLayoutProperty("nexus-weather-selection-layer", "visibility", weatherActive ? "visible" : "none");
+      }
+    }
+    if (!weatherActive) pauseRadarPlayback();
+
+    const heading = $("mapHeading");
+    const annotation = $("mapAnnotation");
+    const footLeft = $("mapFootLeft");
+    const footRight = $("mapFootRight");
+    if (mode === "cyber") {
+      safeText(heading, "Planeta Tierra · actividad observada");
+      safeText(annotation, "País de registro de red · centroide aproximado · no localiza incidentes ni víctimas");
+      safeText(footLeft, "DATOS AGREGADOS · SIN RUTAS NI CONEXIONES INVENTADAS");
+      safeText(footRight, "ZOOM · ROTAR · INSPECCIONAR EDIFICIOS");
+      if (mapReady) {
+        const zoom = map.getZoom();
+        safeText($("mapStatus"), zoom > 5.2
+          ? "Zoom local · marcadores nacionales ocultos"
+          : "Vista global · datos de sensores agregados por país");
+      }
+    } else if (mode === "weather") {
+      safeText(heading, "Global Weather · precipitación y condiciones actuales");
+      safeText(annotation, "Radar observado donde existe cobertura · consulta puntual basada en modelos");
+      safeText(footLeft, "RADAR HISTÓRICO · INTERVALOS DE 10 MIN · SIN PRONÓSTICO DE RADAR");
+      safeText(footRight, "SELECCIONÁ UN PUNTO PARA CONSULTAR EL TIEMPO");
+      if (mapReady) loadRadarFrames();
+    } else {
+      safeText(heading, "Orbital Intelligence · catálogo público");
+      safeText(annotation, "Contexto agregado de objetos espaciales · sin posiciones individuales");
+      safeText(footLeft, "CATÁLOGOS PÚBLICOS · COBERTURA INCOMPLETA");
+      safeText(footRight, "SIN TRAYECTORIAS NI SEGUIMIENTO INDIVIDUAL");
+      safeText($("mapStatus"), "Modo orbital · consultá el resumen agregado de CelesTrak");
+    }
+  }
+
   function addBuildingInspector(e) {
     const feature = e.features && e.features[0];
     if (!feature) return;
@@ -427,6 +697,19 @@
         console.warn("NEXUS atmosphere effect unavailable:", error);
       }
       map.addSource("nexus-country-observations", { type: "geojson", data: emptyCollection() });
+      map.addSource("nexus-weather-selection", { type: "geojson", data: emptyCollection() });
+      map.addLayer({
+        id: "nexus-weather-selection-layer",
+        type: "circle",
+        source: "nexus-weather-selection",
+        paint: {
+          "circle-radius": 7,
+          "circle-color": "#63e1ed",
+          "circle-opacity": 0.95,
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 2
+        }
+      });
       map.addLayer({
         id: "nexus-country-glow", type: "circle", source: "nexus-country-observations", maxzoom: 5.2,
         paint: {
@@ -495,6 +778,14 @@
       $("buildingToggle").disabled = !hasBuildings;
       $("buildingToggle").checked = hasBuildings;
       const updateMapScaleNotice = () => {
+        if (activeMapMode === "weather") {
+          safeText($("mapStatus"), "Radar de lluvia · historial reciente · cobertura variable");
+          return;
+        }
+        if (activeMapMode === "orbital") {
+          safeText($("mapStatus"), "Modo orbital · contexto de catálogo agregado");
+          return;
+        }
         const zoom = map.getZoom();
         if (zoom > 5.2) {
           safeText($("mapStatus"), "Zoom local · marcadores nacionales ocultos para evitar falsas ubicaciones");
@@ -509,12 +800,51 @@
       safeText($("rendererStatus"), "MapLibre GL · WebGL");
       mapReady = true;
       updateMap(latest && latest.feeds ? latest.feeds.dshield : null);
+      if (activeMapMode !== "cyber") setMapMode(activeMapMode);
+    });
+
+    map.on("click", (event) => {
+      if (activeMapMode === "weather") lookupWeatherAt(event.lngLat);
     });
 
     map.on("error", (event) => {
       if (event && event.error) {
         safeText($("mapStatus"), "Mapa parcialmente disponible · revisá la conexión");
       }
+    });
+
+    $("cyberModeBtn").addEventListener("click", () => setMapMode("cyber"));
+    $("weatherModeBtn").addEventListener("click", () => setMapMode("weather"));
+    $("orbitalModeBtn").addEventListener("click", () => setMapMode("orbital"));
+
+    $("loadRadarBtn").addEventListener("click", () => {
+      if (Date.now() - radarFetchedAt < RADAR_REFRESH_MIN_MS && radarFrames.length) {
+        safeText($("radarFrameTime"), "Radar consultado recientemente · se respeta el intervalo de actualización del proveedor");
+        showRadarFrame(radarFrames.length - 1);
+        return;
+      }
+      loadRadarFrames(true);
+    });
+    $("radarTimeSlider").addEventListener("input", () => {
+      pauseRadarPlayback();
+      showRadarFrame(Number($("radarTimeSlider").value));
+    });
+    $("radarPlayBtn").addEventListener("click", () => {
+      if (radarPlayback) {
+        pauseRadarPlayback();
+        return;
+      }
+      if (radarFrames.length < 2) return;
+      if (radarFrames.currentIndex >= radarFrames.length - 1) showRadarFrame(0);
+      safeText($("radarPlayBtn"), "Ⅱ PAUSAR");
+      radarPlayback = window.setInterval(() => {
+        const next = (radarFrames.currentIndex || 0) + 1;
+        if (next >= radarFrames.length) {
+          pauseRadarPlayback();
+          return;
+        }
+        showRadarFrame(next);
+      }, 900);
     });
 
     $("buildingToggle").addEventListener("change", () => {
