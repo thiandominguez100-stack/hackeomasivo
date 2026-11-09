@@ -278,3 +278,20 @@ footer a{color:#7cabb9}
 .orbital-surface-status{margin:0;padding:8px 10px;border:1px solid #28566a;border-radius:7px;background:#081a27;color:#a9e1e8;font:8px 'DM Mono';letter-spacing:.45px;line-height:1.5}
 .orbital-surface-status::before{content:"●";color:#5bdfae;margin-right:7px}
 @media(max-width:900px){.orbital-action-row{justify-content:flex-start}}
+
+
+/* NEXUS 6.5 — source freshness, model spread and satellite tile health */
+.weather-model-comparison-card{display:grid;gap:8px;margin-top:12px;padding:11px;border:1px solid #2a5264;border-radius:8px;background:#091b27}
+.weather-model-comparison-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.weather-model-comparison-head h4{margin:4px 0 0;color:#e2f5fa;font-size:11px}
+.weather-model-comparison-head label{color:#83aabb;font:8px 'DM Mono';letter-spacing:.8px}
+.weather-model-comparison-head .method-note{max-width:48%;margin:0;text-align:right}
+.weather-model-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.weather-model-table th,.weather-model-table td{padding:7px 6px;border-bottom:1px solid #1d3748;text-align:right;color:#d7eaf0;font:8px 'DM Mono';font-variant-numeric:tabular-nums}
+.weather-model-table th{color:#83aabb;font-size:7px;font-weight:500;line-height:1.35}
+.weather-model-table th:first-child,.weather-model-table td:first-child{text-align:left;width:28%}
+.weather-model-name{color:#c5eaf1!important;font-weight:600!important}
+.weather-model-unavailable{color:#8a9aa4!important}
+.weather-model-summary{margin:0;color:#bfe7d9;font:8px 'DM Mono';line-height:1.5}
+.weather-model-note{margin:0;color:#7894a5;font-size:8px;line-height:1.5}
+.weather-model-comparison .empty-state{margin:0;color:#839dab;font-size:8px;line-height:1.5}
