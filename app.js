@@ -973,21 +973,33 @@
     const Cesium = window.Cesium;
     const satellite = orbitalSatellites[0].library;
     const now = new Date();
+    const refreshTrails = Date.now() - orbitalTrailRefreshAt >= 60000;
     orbitalSatellites.forEach((item) => {
       const geo = satelliteGeodetic(satellite, item.satrec, now);
       if (!geo) return;
       const altitudeKm = geo.height;
       item.entity.position = Cesium.Cartesian3.fromRadians(geo.longitude, geo.latitude, altitudeKm * 1000);
+      if (refreshTrails && item.entity.polyline) {
+        const periodMs = item.periodMinutes * 60 * 1000;
+        const trail = [];
+        for (let step = 0; step <= 72; step += 1) {
+          const future = new Date(now.getTime() + periodMs * step / 72);
+          const point = satelliteGeodetic(satellite, item.satrec, future);
+          if (point) trail.push(Cesium.Cartesian3.fromRadians(point.longitude, point.latitude, point.height * 1000));
+        }
+        if (trail.length >= 20) item.entity.polyline.positions = trail;
+      }
       item.entity.description =
         "<div class='cesium-infoBox-defaultDescription'>" +
         "<b>" + escapeHtml(item.name) + "</b><br>" +
         "Altitud orbital estimada: " + altitudeKm.toFixed(1) + " km<br>" +
         "Inclinación: " + Number(item.omm.INCLINATION).toFixed(2) + "°<br>" +
-        "Período: " + (item.periodMinutes).toFixed(1) + " min<br>" +
+        "Período: " + item.periodMinutes.toFixed(1) + " min<br>" +
         "Elementos OMM: " + escapeHtml(item.omm.EPOCH) + "<br>" +
         "Fuente: CelesTrak · propagación matemática SGP4" +
         "</div>";
     });
+    if (refreshTrails) orbitalTrailRefreshAt = Date.now();
     orbitalViewer.scene.requestRender();
   }
 
@@ -1046,13 +1058,15 @@
             style: Cesium.LabelStyle.FILL_AND_OUTLINE,
             pixelOffset: new Cesium.Cartesian2(0, -15),
             scaleByDistance: new Cesium.NearFarScalar(900000, 1, 32000000, 0.55),
-            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 42000000)
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 42000000),
+            show: !$("orbitalLabelsToggle") || $("orbitalLabelsToggle").checked
           },
           polyline: {
             positions: orbitPositions,
             width: 1.3,
             material: color.withAlpha(0.46),
-            arcType: Cesium.ArcType.NONE
+            arcType: Cesium.ArcType.NONE,
+            show: !$("orbitalTrailsToggle") || $("orbitalTrailsToggle").checked
           }
         });
         orbitalSatellites.push({
@@ -1090,6 +1104,7 @@
           });
         });
     }
+    orbitalTrailRefreshAt = Date.now();
     updateOrbitalPositions();
     if (orbitalTickHandle) window.clearInterval(orbitalTickHandle);
     orbitalTickHandle = window.setInterval(updateOrbitalPositions, 5000);
