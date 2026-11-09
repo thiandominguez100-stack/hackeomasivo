@@ -44,7 +44,12 @@
   let satelliteFrameIndex = 12;
   let activeSatelliteLayer = "modisTerra";
   let satelliteOpacity = 0.9;
+  let satelliteCurrentTileUrl = "";
+  let satelliteLoadGeneration = 0;
+  let satelliteTileErrorCount = 0;
   let weatherRequestController = null;
+  let orbitalVisibilityListenerInstalled = false;
+  const weatherModelComparisonCache = new Map();
   let weatherGridFetchedAt = 0;
   let weatherGridLoading = false;
   let weatherGridRecords = [];
@@ -105,6 +110,12 @@
   ].join(",");
   const WEATHER_GRID_REFRESH_MS = 60 * 60 * 1000;
   const WEATHER_CACHE_KEY = "nexus-weather-grid-v3";
+  const WEATHER_MODEL_CACHE_MS = 30 * 60 * 1000;
+  const WEATHER_MODEL_COMPARE_SOURCES = [
+    { id: "ecmwf_ifs025", name: "ECMWF IFS", provider: "Centro Europeo" },
+    { id: "ncep_gfs_seamless", name: "NOAA GFS", provider: "NOAA" },
+    { id: "cmc_gem_seamless", name: "GEM Global", provider: "Servicio meteorológico canadiense" }
+  ];
   const ORBITAL_CACHE_KEY = "nexus-civil-weather-omm-v2";
   const WEATHER_VISUALS = {
     temperature: { label: "TEMPERATURA", property: "temperature", stops: [-35, "#3859a8", -10, "#398bc5", 5, "#54b9a9", 20, "#d6c85e", 35, "#e87950", 48, "#a93d65"] },
@@ -186,6 +197,22 @@
     state.className = "feed-state " + className;
     safeText(state, labels[status] || "PENDIENTE");
     safeText($(infoId), info || (lastSuccess ? "Última lectura " + ageLabel(lastSuccess) : "Esperando lectura válida…"));
+  }
+
+  function ageMinutes(value) {
+    const date = parseDate(value);
+    return date ? Math.max(0, (Date.now() - date.getTime()) / 60000) : null;
+  }
+
+  function freshnessStatus(feed, maxAgeMinutes) {
+    if (!feed) return "pending";
+    const savedStatus = String(feed.status || "pending");
+    if (savedStatus === "error" && !feed.lastSuccessfulAt) return "error";
+    if (savedStatus === "stale") return "stale";
+    const age = ageMinutes(feed.lastSuccessfulAt);
+    if (age === null) return savedStatus === "ok" ? "error" : savedStatus;
+    if (age > maxAgeMinutes) return "stale";
+    return savedStatus === "ok" ? "ok" : savedStatus === "error" ? "error" : "pending";
   }
 
   function renderMetrics(dshield, cisa) {
@@ -342,10 +369,11 @@
     if (!container) return;
     container.replaceChildren();
     const states = reports && reports.sourceStates ? reports.sourceStates : {};
+    const items = Array.isArray(reports && reports.items) ? reports.items : [];
 
     Object.entries(REPORT_SOURCE_META).forEach(([key, source]) => {
       const state = states[key] || {};
-      const status = state.status || "pending";
+      const status = freshnessStatus(state, 180);
       const row = document.createElement("div");
       row.className = "source-row report-health-row";
       addText(row, "span", "source-mark reports-mark " + source.css, source.mark);
@@ -353,11 +381,17 @@
       const content = document.createElement("div");
       addText(content, "b", "", source.name);
       const count = Number(state.itemCount || 0);
+      const latest = items
+        .filter((item) => item && item.sourceKey === key && item.publishedAt)
+        .map((item) => item.publishedAt)
+        .sort()
+        .pop();
       let detail = count + " publicaciones";
-      if (state.lastSuccessfulAt) detail += " · " + ageLabel(state.lastSuccessfulAt);
-      else if (status === "ok") detail = count ? detail : "Fuente disponible · sin publicaciones recientes";
+      if (state.lastSuccessfulAt) detail += " · consulta " + ageLabel(state.lastSuccessfulAt);
+      else if (status === "ok") detail = count ? detail : "Fuente consultada · sin publicaciones recientes";
       else if (status === "error") detail = "No hay una lectura válida";
       else detail += " · esperando lectura";
+      if (latest) detail += " · último aviso " + ageLabel(latest);
       addText(content, "small", "", detail);
 
       const labels = { ok: "ACTIVA", stale: "ANTERIOR", error: "SIN DATOS", pending: "PENDIENTE" };
@@ -404,27 +438,46 @@
     const feeds = data && data.feeds ? data.feeds : {};
     const dshield = feeds.dshield || {};
     const cisa = feeds.cisaKev || {};
-    setFeedState("dshieldState", "dshieldInfo", dshield.status,
-      dshield.status === "ok" ? "Última lectura " + ageLabel(dshield.lastSuccessfulAt) :
-      dshield.status === "stale" ? "Sin conexión actual · última lectura " + ageLabel(dshield.lastSuccessfulAt) :
+    const dshieldStatus = freshnessStatus(dshield, 120);
+    const cisaStatus = freshnessStatus(cisa, 120);
+
+    setFeedState("dshieldState", "dshieldInfo", dshieldStatus,
+      dshieldStatus === "ok" ? "Última lectura hace " + ageLabel(dshield.lastSuccessfulAt) :
+      dshieldStatus === "stale" ? "Lectura anterior · última consulta hace " + ageLabel(dshield.lastSuccessfulAt) :
       "No hay una lectura válida todavía", dshield.lastSuccessfulAt);
-    setFeedState("cisaState", "cisaInfo", cisa.status,
-      cisa.status === "ok" ? "Catálogo " + (cisa.catalogVersion || "actual") + " · " + ageLabel(cisa.lastSuccessfulAt) :
-      cisa.status === "stale" ? "Sin conexión actual · última lectura " + ageLabel(cisa.lastSuccessfulAt) :
+    setFeedState("cisaState", "cisaInfo", cisaStatus,
+      cisaStatus === "ok" ? "Catálogo " + (cisa.catalogVersion || "actual") + " · consulta hace " + ageLabel(cisa.lastSuccessfulAt) :
+      cisaStatus === "stale" ? "Lectura anterior · última consulta hace " + ageLabel(cisa.lastSuccessfulAt) :
       "No hay una lectura válida todavía", cisa.lastSuccessfulAt);
 
     const reports = feeds.reports || {};
     renderReportSourceHealth(reports);
+    const reportStates = reports.sourceStates || {};
+    const reportKeys = Object.keys(REPORT_SOURCE_META);
+    const reportFresh = reportKeys.filter((key) => freshnessStatus(reportStates[key], 180) === "ok").length;
+    const reportStale = reportKeys.filter((key) => freshnessStatus(reportStates[key], 180) === "stale").length;
+    const reportErrors = reportKeys.filter((key) => freshnessStatus(reportStates[key], 180) === "error").length;
+    const reportTotal = reportKeys.length;
+    const snapshotAge = ageMinutes(data && data.generatedAt);
+    const snapshotFresh = snapshotAge !== null && snapshotAge <= 120;
 
-    const successful = [dshield, cisa, reports].filter((feed) => feed.status === "ok");
-    const stale = [dshield, cisa, reports].filter((feed) => feed.status === "stale");
-    if (successful.length === 3) setPill("online", "Fuentes actualizadas");
-    else if (successful.length || stale.length) setPill("degraded", "Datos parciales / anteriores");
-    else setPill("pending", "Esperando fuentes públicas");
+    const activeSources = (dshieldStatus === "ok" ? 1 : 0) +
+      (cisaStatus === "ok" ? 1 : 0) + reportFresh;
+    const totalSources = reportTotal + 2;
+    if (activeSources === totalSources && snapshotFresh) {
+      setPill("online", "Fuentes verificadas");
+    } else if (activeSources || reportStale || reportErrors || dshieldStatus === "stale" || cisaStatus === "stale") {
+      setPill("degraded", "Parcial · " + activeSources + "/" + totalSources + " fuentes recientes");
+    } else {
+      setPill("offline", "Fuentes sin lecturas recientes");
+    }
 
-    safeText($("snapshotState"), data && data.generatedAt ? "Snapshot recibido" : "Esperando primer snapshot");
+    safeText($("snapshotState"), snapshotFresh ? "Snapshot vigente" :
+      snapshotAge === null ? "Snapshot sin fecha" : "Snapshot anterior");
     safeText($("snapshotAge"), data && data.generatedAt ? ageLabel(data.generatedAt) : "—");
-    safeText($("lastUpdated"), data && data.generatedAt ? "Snapshot: " + dateLabel(data.generatedAt) : "Esperando primer conjunto de datos…");
+    safeText($("lastUpdated"), data && data.generatedAt
+      ? "Snapshot: " + dateLabel(data.generatedAt) + (snapshotFresh ? "" : " · atraso mayor a 120 min")
+      : "Esperando primer conjunto de datos…");
   }
 
   function updateMap(dshield) {
@@ -749,6 +802,7 @@
   }
 
   function displayNumber(value, digits = 0, suffix = "") {
+    if (value === null || value === undefined || value === "") return "—";
     const number = Number(value);
     return Number.isFinite(number) ? number.toFixed(digits) + suffix : "—";
   }
@@ -862,6 +916,165 @@
     }
   }
 
+  function summarizeModelForecast(hourly) {
+    if (!hourly || !Array.isArray(hourly.time) || !hourly.time.length) {
+      throw new Error("El modelo no devolvió una serie horaria.");
+    }
+    const numeric = (values) => (Array.isArray(values) ? values : [])
+      .filter((value) => typeof value === "number" && Number.isFinite(value));
+    const temperatures = numeric(hourly.temperature_2m);
+    const precipitation = numeric(hourly.precipitation);
+    const winds = numeric(hourly.wind_speed_10m);
+    const average = temperatures.length
+      ? temperatures.reduce((sum, value) => sum + value, 0) / temperatures.length : null;
+    const totalRain = precipitation.length
+      ? precipitation.reduce((sum, value) => sum + value, 0) : null;
+    const maxWind = winds.length ? Math.max(...winds) : null;
+    if (average === null && totalRain === null && maxWind === null) {
+      throw new Error("El modelo no devolvió variables comparables.");
+    }
+    return {
+      averageTemperature: average,
+      precipitationTotal: totalRain,
+      maximumWind: maxWind,
+      hours: hourly.time.length,
+      firstHour: hourly.time[0] || null
+    };
+  }
+
+  function modelValueRange(results, key) {
+    const values = results.map((item) => item[key]).filter((value) =>
+      typeof value === "number" && Number.isFinite(value));
+    return values.length >= 2 ? Math.max(...values) - Math.min(...values) : null;
+  }
+
+  function renderWeatherModelComparison(results, fetchedAt, cached) {
+    const container = $("weatherModelComparison");
+    if (!container) return;
+    container.replaceChildren();
+    const available = results.filter((item) => item.status === "ok");
+    safeText($("weatherModelComparisonStatus"),
+      available.length + "/" + WEATHER_MODEL_COMPARE_SOURCES.length + " modelos disponibles" +
+      (cached ? " · caché " + ageLabel(new Date(fetchedAt).toISOString()) : " · consultado ahora"));
+
+    if (!available.length) {
+      addText(container, "p", "empty-state", "No se pudo completar la comparación. Los datos principales del pronóstico siguen disponibles.");
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.className = "weather-model-table";
+    const head = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["Modelo", "Temp. media 24 h", "Precip. total 24 h", "Viento máx."].forEach((label) =>
+      addText(headerRow, "th", "", label));
+    head.appendChild(headerRow);
+    table.appendChild(head);
+
+    const body = document.createElement("tbody");
+    results.forEach((item) => {
+      const row = document.createElement("tr");
+      addText(row, "td", "weather-model-name", item.name);
+      if (item.status === "ok") {
+        addText(row, "td", "", displayNumber(item.averageTemperature, 1, " °C"));
+        addText(row, "td", "", displayNumber(item.precipitationTotal, 1, " mm"));
+        addText(row, "td", "", displayNumber(item.maximumWind, 1, " km/h"));
+      } else {
+        addText(row, "td", "weather-model-unavailable", "No disponible");
+        addText(row, "td", "weather-model-unavailable", "—");
+        addText(row, "td", "weather-model-unavailable", "—");
+      }
+      body.appendChild(row);
+    });
+    table.appendChild(body);
+    container.appendChild(table);
+
+    if (available.length >= 2) {
+      const temperatureSpread = modelValueRange(available, "averageTemperature");
+      const precipitationSpread = modelValueRange(available, "precipitationTotal");
+      const windSpread = modelValueRange(available, "maximumWind");
+      const significant = (temperatureSpread !== null && temperatureSpread >= 3) ||
+        (precipitationSpread !== null && precipitationSpread >= 5) ||
+        (windSpread !== null && windSpread >= 15);
+      const moderate = (temperatureSpread !== null && temperatureSpread >= 1.5) ||
+        (precipitationSpread !== null && precipitationSpread >= 2) ||
+        (windSpread !== null && windSpread >= 8);
+      const level = significant ? "Diferencias notables" : moderate ? "Variación moderada" : "Resultados relativamente próximos";
+      const summary = [
+        "Temperatura media: " + displayNumber(temperatureSpread, 1, " °C"),
+        "precipitación total: " + displayNumber(precipitationSpread, 1, " mm"),
+        "viento máximo: " + displayNumber(windSpread, 1, " km/h")
+      ].join(" · ");
+      addText(container, "p", "weather-model-summary", level + " entre modelos · " + summary);
+    } else {
+      addText(container, "p", "weather-model-summary",
+        "Comparación parcial: hay menos de dos modelos disponibles para calcular diferencias.");
+    }
+    addText(container, "p", "weather-model-note",
+      "Son resúmenes de tres pronósticos globales para las próximas 24 horas, no mediciones ni probabilidades. Una menor diferencia no garantiza mayor precisión.");
+  }
+
+  async function loadWeatherModelComparison(latitude, longitude, signal) {
+    const container = $("weatherModelComparison");
+    if (!container) return;
+    const key = Number(latitude).toFixed(3) + "," + Number(longitude).toFixed(3);
+    const cached = weatherModelComparisonCache.get(key);
+    if (cached && Date.now() - cached.fetchedAt < WEATHER_MODEL_CACHE_MS) {
+      if (!signal || !signal.aborted) renderWeatherModelComparison(cached.results, cached.fetchedAt, true);
+      return;
+    }
+
+    safeText($("weatherModelComparisonStatus"), "Consultando ECMWF, NOAA y GEM…");
+    container.replaceChildren();
+    addText(container, "p", "empty-state", "Comparando salidas independientes para las próximas 24 horas…");
+
+    const results = await Promise.all(WEATHER_MODEL_COMPARE_SOURCES.map(async (model) => {
+      try {
+        const query = new URLSearchParams({
+          latitude: Number(latitude).toFixed(4),
+          longitude: Number(longitude).toFixed(4),
+          hourly: "temperature_2m,precipitation,wind_speed_10m",
+          forecast_hours: "24",
+          models: model.id,
+          wind_speed_unit: "kmh",
+          precipitation_unit: "mm",
+          timezone: "GMT"
+        });
+        const response = await fetch("https://api.open-meteo.com/v1/forecast?" + query.toString(), {
+          method: "GET",
+          cache: "no-store",
+          headers: { "Accept": "application/json" },
+          signal
+        });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const payload = await response.json();
+        return Object.assign({
+          id: model.id,
+          name: model.name,
+          provider: model.provider,
+          status: "ok"
+        }, summarizeModelForecast(payload && payload.hourly));
+      } catch (error) {
+        if (signal && signal.aborted) return {
+          id: model.id, name: model.name, provider: model.provider, status: "aborted"
+        };
+        console.warn("NEXUS weather model " + model.id + ":", error);
+        return {
+          id: model.id, name: model.name, provider: model.provider, status: "error",
+          reason: error && error.message ? error.message : "No disponible"
+        };
+      }
+    }));
+
+    if (signal && signal.aborted) return;
+    const fetchedAt = Date.now();
+    weatherModelComparisonCache.set(key, { fetchedAt, results });
+    while (weatherModelComparisonCache.size > 20) {
+      weatherModelComparisonCache.delete(weatherModelComparisonCache.keys().next().value);
+    }
+    renderWeatherModelComparison(results, fetchedAt, false);
+  }
+
   async function lookupWeatherAt(coordinates) {
     if (!coordinates || !Number.isFinite(coordinates.lat) || !Number.isFinite(coordinates.lng)) return;
     if (weatherRequestController) weatherRequestController.abort();
@@ -916,14 +1129,16 @@
       safeText($("wxHumidity"), displayNumber(current.relative_humidity_2m, 0, " %"));
       safeText($("wxCloud"), displayNumber(current.cloud_cover, 0, " %"));
       safeText($("wxRain"), displayNumber(current.precipitation, 1, " mm"));
-      safeText($("weatherPointUpdated"), "Open‑Meteo · modelo meteorológico · " +
+      safeText($("weatherPointUpdated"), "Open‑Meteo best_match · modelo elegido según la ubicación · " +
         (current.time ? dateLabel(current.time + "Z") : "hora no disponible") +
         " · altitud de modelo " + displayNumber(data.elevation, 0, " m"));
+      void loadWeatherModelComparison(lat, lon, controller.signal);
     } catch (error) {
       if (error && error.name === "AbortError") return;
       console.warn("NEXUS point weather:", error);
       safeText($("weatherPointUpdated"), "No se pudieron obtener datos para este punto. Probá otra ubicación.");
       ["wxTemp", "wxFeels", "wxWind", "wxHumidity", "wxCloud", "wxRain"].forEach((id) => safeText($(id), "—"));
+      void loadWeatherModelComparison(lat, lon, controller.signal);
     }
   }
 
@@ -1059,7 +1274,7 @@
   }
 
   function startOrbitalUpdates() {
-    if (orbitalTickHandle || !orbitalSatellites.length) return;
+    if (orbitalTickHandle || !orbitalSatellites.length || document.hidden) return;
     updateOrbitalPositions();
     orbitalTickHandle = window.setInterval(updateOrbitalPositions, 5000);
   }
@@ -1069,7 +1284,7 @@
     const Cesium = window.Cesium;
     const satellite = orbitalSatellites[0].library;
     const now = new Date();
-    const refreshTrails = Date.now() - orbitalTrailRefreshAt >= 60000;
+    const refreshTrails = Date.now() - orbitalTrailRefreshAt >= 120000;
     orbitalSatellites.forEach((item) => {
       const geo = satelliteGeodetic(satellite, item.satrec, now);
       if (!geo) return;
@@ -1078,22 +1293,13 @@
       if (refreshTrails && item.entity.polyline) {
         const periodMs = item.periodMinutes * 60 * 1000;
         const trail = [];
-        for (let step = 0; step <= 72; step += 1) {
-          const future = new Date(now.getTime() + periodMs * step / 72);
+        for (let step = 0; step <= 48; step += 1) {
+          const future = new Date(now.getTime() + periodMs * step / 48);
           const point = satelliteGeodetic(satellite, item.satrec, future);
           if (point) trail.push(Cesium.Cartesian3.fromRadians(point.longitude, point.latitude, point.height * 1000));
         }
         if (trail.length >= 20) item.entity.polyline.positions = trail;
       }
-      item.entity.description =
-        "<div class='cesium-infoBox-defaultDescription'>" +
-        "<b>" + escapeHtml(item.name) + "</b><br>" +
-        "Altitud orbital estimada: " + altitudeKm.toFixed(1) + " km<br>" +
-        "Inclinación: " + Number(item.omm.INCLINATION).toFixed(2) + "°<br>" +
-        "Período: " + item.periodMinutes.toFixed(1) + " min<br>" +
-        "Elementos OMM: " + escapeHtml(item.omm.EPOCH) + "<br>" +
-        "Fuente: CelesTrak · propagación matemática SGP4" +
-        "</div>";
     });
     if (refreshTrails) orbitalTrailRefreshAt = Date.now();
     orbitalViewer.scene.requestRender();
@@ -1122,8 +1328,8 @@
         const periodMinutes = Number.isFinite(meanMotion) && meanMotion > 0 ? 1440 / meanMotion : 100;
         const orbitPositions = [];
         const periodMs = periodMinutes * 60 * 1000;
-        for (let step = 0; step <= 72; step += 1) {
-          const future = new Date(now.getTime() + periodMs * step / 72);
+        for (let step = 0; step <= 48; step += 1) {
+          const future = new Date(now.getTime() + periodMs * step / 48);
           const geo = satelliteGeodetic(satellite, satrec, future);
           if (!geo) continue;
           orbitPositions.push(Cesium.Cartesian3.fromRadians(geo.longitude, geo.latitude, geo.height * 1000));
@@ -1165,6 +1371,15 @@
             show: !$("orbitalTrailsToggle") || $("orbitalTrailsToggle").checked
           }
         });
+        entity.description =
+          "<div class='cesium-infoBox-defaultDescription'>" +
+          "<b>" + escapeHtml(name) + "</b><br>" +
+          "Altitud estimada al cargar el catálogo: " + initial.height.toFixed(1) + " km<br>" +
+          "Inclinación: " + Number(omm.INCLINATION).toFixed(2) + "°<br>" +
+          "Período: " + periodMinutes.toFixed(1) + " min<br>" +
+          "Época OMM: " + escapeHtml(omm.EPOCH) + "<br>" +
+          "Fuente: CelesTrak · propagación matemática SGP4" +
+          "</div>";
         orbitalSatellites.push({
           name,
           omm,
@@ -1356,35 +1571,58 @@
     const layerId = "nexus-satellite-imagery-layer";
     const tileUrl = NASA_GIBS_ROOT + descriptor.layer + "/default/" + date +
       "/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg";
+    const generation = ++satelliteLoadGeneration;
+    satelliteTileErrorCount = 0;
 
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
-    map.addSource(sourceId, {
-      type: "raster",
-      tiles: [tileUrl],
-      tileSize: 256,
-      minzoom: 0,
-      maxzoom: 9,
-      attribution: "NASA Global Imagery Browse Services (GIBS) · NASA EOSDIS"
-    });
-    const firstSymbolLayer = (map.getStyle().layers.find((layer) => layer.type === "symbol") || {}).id;
-    const imageryLayer = {
-      id: layerId,
-      type: "raster",
-      source: sourceId,
-      layout: { visibility: activeMapMode === "satellite" ? "visible" : "none" },
-      paint: {
-        "raster-opacity": satelliteOpacity,
-        "raster-fade-duration": 220
-      }
-    };
-    if (firstSymbolLayer) map.addLayer(imageryLayer, firstSymbolLayer);
-    else map.addLayer(imageryLayer);
+    const existingSource = map.getSource(sourceId);
+    if (existingSource && typeof existingSource.setTiles === "function") {
+      if (satelliteCurrentTileUrl !== tileUrl) existingSource.setTiles([tileUrl]);
+    } else {
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+      map.addSource(sourceId, {
+        type: "raster",
+        tiles: [tileUrl],
+        tileSize: 256,
+        minzoom: 0,
+        maxzoom: 9,
+        attribution: "NASA Global Imagery Browse Services (GIBS) · NASA EOSDIS"
+      });
+    }
+    satelliteCurrentTileUrl = tileUrl;
+
+    if (!map.getLayer(layerId)) {
+      const firstSymbolLayer = (map.getStyle().layers.find((layer) => layer.type === "symbol") || {}).id;
+      const imageryLayer = {
+        id: layerId,
+        type: "raster",
+        source: sourceId,
+        layout: { visibility: activeMapMode === "satellite" ? "visible" : "none" },
+        paint: {
+          "raster-opacity": satelliteOpacity,
+          "raster-fade-duration": 220
+        }
+      };
+      if (firstSymbolLayer) map.addLayer(imageryLayer, firstSymbolLayer);
+      else map.addLayer(imageryLayer);
+    } else {
+      map.setLayoutProperty(layerId, "visibility", activeMapMode === "satellite" ? "visible" : "none");
+      map.setPaintProperty(layerId, "raster-opacity", satelliteOpacity);
+    }
 
     safeText($("satelliteLayerDescription"), descriptor.detail);
     safeText($("satelliteImageryStatus"), descriptor.label + " · " + descriptor.coverage +
-      " · " + date + " UTC · solicitando teselas a NASA GIBS…");
+      " · " + date + " UTC · comprobando teselas de NASA GIBS…");
     safeText($("mapStatus"), "Imágenes satelitales NASA GIBS · " + descriptor.label + " · " + date + " UTC");
+    map.once("idle", () => {
+      if (generation !== satelliteLoadGeneration || activeMapMode !== "satellite") return;
+      const finalStatus = satelliteTileErrorCount
+        ? "Cobertura parcial · " + satelliteTileErrorCount + " errores de teselas · " + date +
+          " UTC · probá otra fecha o sensor."
+        : "Carga de teselas finalizada sin errores reportados · " + date +
+          " UTC · los huecos transparentes pueden deberse a nubes, noche o cobertura del sensor.";
+      safeText($("satelliteImageryStatus"), descriptor.label + " · " + descriptor.coverage + " · " + finalStatus);
+    });
     map.triggerRepaint();
   }
 
@@ -1741,18 +1979,12 @@
       lookupWeatherAt(event.lngLat);
     });
 
-    map.on("sourcedata", (event) => {
-      if (event && event.sourceId === "nexus-satellite-imagery" && event.isSourceLoaded) {
-        const descriptor = SATELLITE_IMAGERY_LAYERS[activeSatelliteLayer] || SATELLITE_IMAGERY_LAYERS.modisTerra;
-        safeText($("satelliteImageryStatus"), descriptor.label + " · " + descriptor.coverage +
-          " · imagen con fecha " + satelliteFrameDate(satelliteFrameIndex) +
-          " · los huecos pueden indicar falta de pasada, noche o cobertura regional.");
-      }
-    });
     map.on("error", (event) => {
       if (event && event.sourceId === "nexus-satellite-imagery") {
+        satelliteTileErrorCount += 1;
         safeText($("satelliteImageryStatus"),
-          "NASA GIBS no entregó esta tesela o fecha. Probá otra fecha o una capa con distinta cobertura.");
+          "NASA GIBS informó errores en teselas de esta vista · " + satelliteTileErrorCount +
+          " solicitudes fallidas hasta ahora.");
       } else if (event && event.error) {
         safeText($("mapStatus"), "Mapa parcialmente disponible · revisá la conexión");
       }
@@ -1830,6 +2062,13 @@
       orbitalViewer.scene.requestRender();
     });
     $("loadOrbitalBtn").addEventListener("click", () => loadOrbitalCatalog());
+    if (!orbitalVisibilityListenerInstalled) {
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) pauseOrbitalUpdates();
+        else if (activeMapMode === "orbital") startOrbitalUpdates();
+      });
+      orbitalVisibilityListenerInstalled = true;
+    }
     $("orbitalHomeBtn").addEventListener("click", () => resetOrbitalCamera());
 
     $("loadWeatherGridBtn").addEventListener("click", () => loadWeatherGrid());
