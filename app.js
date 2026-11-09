@@ -680,23 +680,27 @@
     const lines = [
       ["Temperatura", displayNumber(p.temperature, 1, " °C")],
       ["Sensación térmica", displayNumber(p.feelsLike, 1, " °C")],
+      ["Punto de rocío", displayNumber(p.dewPoint, 1, " °C")],
       ["Humedad relativa", displayNumber(p.humidity, 0, " %")],
-      ["Nubosidad", displayNumber(p.cloudCover, 0, " %")],
+      ["Nubosidad total", displayNumber(p.cloudCover, 0, " %")],
+      ["Nubes bajas / medias / altas", [displayNumber(p.cloudLow, 0, "%"), displayNumber(p.cloudMid, 0, "%"), displayNumber(p.cloudHigh, 0, "%")].join(" / ")],
       ["Precipitación", displayNumber(p.precipitation, 1, " mm")],
-      ["Lluvia", displayNumber(p.rain, 1, " mm")],
-      ["Chubascos", displayNumber(p.showers, 1, " mm")],
-      ["Nieve", displayNumber(p.snowfall, 1, " cm")],
+      ["Lluvia / chubascos / nieve", [displayNumber(p.rain, 1, " mm"), displayNumber(p.showers, 1, " mm"), displayNumber(p.snowfall, 1, " cm")].join(" / ")],
       ["Presión a nivel del mar", displayNumber(p.pressure, 0, " hPa")],
-      ["Presión de superficie", displayNumber(p.surfacePressure, 0, " hPa")],
       ["Viento", displayNumber(p.windSpeed, 1, " km/h") + " · " + windDirectionLabel(p.windDirection)],
       ["Ráfagas", displayNumber(p.windGusts, 1, " km/h")],
+      ["Índice UV", displayNumber(p.uvIndex, 1)],
+      ["Radiación solar", displayNumber(p.radiation, 0, " W/m²")],
+      ["Visibilidad", displayNumber(p.visibility, 0, " m")],
+      ["CAPE", displayNumber(p.cape, 0, " J/kg")],
+      ["Humedad del suelo", displayNumber(p.soilMoisture, 3, " m³/m³")],
       ["Código WMO", displayNumber(p.weatherCode, 0)],
       ["Día/noche", Number(p.isDay) === 1 ? "Día" : Number(p.isDay) === 0 ? "Noche" : "—"],
-      ["Hora del modelo", p.time || "No disponible"]
+      ["Hora pronosticada", p.time || "No disponible"]
     ];
-    const node = popupNode("Celda de modelo meteorológico", lines,
-      "Open-Meteo · estimación interpolada a una malla mundial de referencia de 15 grados; no es una medición de estación.");
-    new maplibregl.Popup({ closeButton: true, maxWidth: "320px" })
+    const node = popupNode("Celda de pronóstico meteorológico", lines,
+      "Open-Meteo · estimación horaria de modelo interpolada a una malla mundial de referencia de 15 grados; no es una medición de estación.");
+    new maplibregl.Popup({ closeButton: true, maxWidth: "330px" })
       .setLngLat(event.lngLat).setDOMContent(node).addTo(map);
   }
 
@@ -941,7 +945,9 @@
         destination: Cesium.Cartesian3.fromDegrees(-35, 18, 33000000),
         orientation: { heading: 0, pitch: Cesium.Math.toRadians(-55), roll: 0 }
       });
-      window.setTimeout(() => orbitalViewer && orbitalViewer.resize(), 120);
+      window.setTimeout(() => {
+        if (orbitalViewer) { orbitalViewer.forceResize(); orbitalViewer.scene.requestRender(); }
+      }, 180);
       return true;
     } catch (error) {
       console.error("NEXUS Cesium viewer:", error);
@@ -1246,7 +1252,7 @@
       });
     }
 
-    if (!weatherActive) pauseRadarPlayback();
+    if (!weatherActive) { pauseRadarPlayback(); pauseWeatherForecast(); }
     const heading = $("mapHeading");
     const annotation = $("mapAnnotation");
     const footLeft = $("mapFootLeft");
