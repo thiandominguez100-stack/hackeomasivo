@@ -1,4 +1,4 @@
-# NEXUS 6.4 — Global Earth Intelligence
+# NEXUS 6.4.1 — Global Earth Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -46,6 +46,13 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - Una publicación, aviso o investigación no se convierte automáticamente en un incidente confirmado. El explorador no inventa gravedad, víctimas, ubicación ni estado operativo.
 - El recolector mantiene `data/publications-history.json`: hasta 2.000 publicaciones oficiales, deduplicadas y con retención de 365 días. El explorador combina el archivo con el snapshot reciente y muestra hasta 100 resultados por consulta.
 - El archivo conserva solo título, fuente, tipo, fecha y enlace HTTPS oficial. Es un historial de publicaciones, no un registro exhaustivo de incidentes confirmados.
+
+## NEXUS 6.4.1: reparación de la superficie orbital
+
+- El modo Orbital usa ahora la textura Natural Earth II incluida con CesiumJS como capa terrestre base. La documentación oficial de Cesium describe estos recursos integrados y muestra cómo servirlos mediante `buildModuleUrl`.
+- OpenStreetMap pasa a ser una capa cartográfica de detalle opcional. Si sus teselas fallan, se oculta la capa secundaria y permanece visible la textura terrestre integrada.
+- La cámara deja de encuadrar automáticamente los 30 satélites y sus trayectorias a la vez. El encuadre inicial prioriza la Tierra e incluye un botón **Centrar planeta** para recuperar esa vista en cualquier momento.
+- El color base del globo y la atmósfera se configuran explícitamente para que la esfera siga siendo distinguible incluso cuando una tesela no está disponible.
 
 ## NEXUS 6.4: Earth Imagery · imágenes satelitales reales
 
