@@ -544,6 +544,8 @@
       slider.disabled = false;
     }
     safeText($("weatherTimeLabel"), formatWeatherTime(time) + " · " + (weatherTimeIndex + 1) + "/" + weatherForecastTimes.length);
+    const playButton = $("weatherPlayBtn");
+    if (playButton) playButton.disabled = weatherForecastTimes.length < 2;
     safeText($("weatherCoverageCount"), cellFeatures.length + " CELDAS ACTIVAS");
     const visual = WEATHER_VISUALS[activeWeatherVariable] || WEATHER_VISUALS.temperature;
     safeText($("weatherGridStatus"), cellFeatures.length + " celdas globales · " + visual.label.toLowerCase() + " · pronóstico horario de Open-Meteo");
@@ -1531,6 +1533,35 @@
     $("weatherModeBtn").addEventListener("click", () => setMapMode("weather"));
     $("orbitalModeBtn").addEventListener("click", () => setMapMode("orbital"));
     $("weatherVariableSelect").addEventListener("change", () => applyWeatherVariable($("weatherVariableSelect").value));
+    $("weatherTimeSlider").addEventListener("input", () => {
+      pauseWeatherForecast();
+      applyWeatherForecastFrame(Number($("weatherTimeSlider").value));
+    });
+    $("weatherPlayBtn").addEventListener("click", () => {
+      if (weatherPlaybackHandle) { pauseWeatherForecast(); return; }
+      if (weatherForecastTimes.length < 2) return;
+      if (weatherTimeIndex >= weatherForecastTimes.length - 1) applyWeatherForecastFrame(0);
+      safeText($("weatherPlayBtn"), "Ⅱ PAUSAR PRONÓSTICO");
+      weatherPlaybackHandle = window.setInterval(() => {
+        const next = weatherTimeIndex + 1;
+        if (next >= weatherForecastTimes.length) { pauseWeatherForecast(); return; }
+        applyWeatherForecastFrame(next);
+      }, 1200);
+    });
+    $("orbitalTrailsToggle").addEventListener("change", () => {
+      if (!orbitalViewer) return;
+      orbitalSatellites.forEach((item) => {
+        if (item.entity.polyline) item.entity.polyline.show = $("orbitalTrailsToggle").checked;
+      });
+      orbitalViewer.scene.requestRender();
+    });
+    $("orbitalLabelsToggle").addEventListener("change", () => {
+      if (!orbitalViewer) return;
+      orbitalSatellites.forEach((item) => {
+        if (item.entity.label) item.entity.label.show = $("orbitalLabelsToggle").checked;
+      });
+      orbitalViewer.scene.requestRender();
+    });
     $("loadOrbitalBtn").addEventListener("click", () => loadOrbitalCatalog());
 
     $("loadWeatherGridBtn").addEventListener("click", () => loadWeatherGrid());
