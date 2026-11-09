@@ -42,7 +42,7 @@ test("no generated simulation events or fake route fields are present", () => {
 
 test("published page is an observatory and does not load the old simulator", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  assert.match(html, /BUILD 5.1/);
+  assert.match(html, /BUILD 6.0/);
   assert.match(html, /DShield/);
   assert.match(html, /CISA/);
   assert.doesNotMatch(html, /simulation\.js/);
@@ -86,7 +86,7 @@ test("reports feed tracks the expanded eight-source allowlist", () => {
 test("interface includes the eight-source health list", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
-  assert.match(html, /BUILD 5.1/);
+  assert.match(html, /BUILD 6.0/);
   assert.match(html, /reportSourcesHealth/);
   assert.match(app, /acscAustralia/);
   assert.match(app, /certUa/);
@@ -97,7 +97,7 @@ test("NEXUS 5.0 warns that country markers are national centroids and hides them
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   assert.match(html, /centroide nacional aproximado/);
-  assert.match(html, /BUILD 5.1/);
+  assert.match(html, /BUILD 6.0/);
   assert.match(app, /maxzoom: 5\.2/);
   assert.match(app, /marcadores nacionales ocultos/);
   assert.match(app, /No indica dónde ocurrió un incidente/);
@@ -126,7 +126,7 @@ test("publication history archive is loaded by the interface and documented as m
 });
 
 
-test("NEXUS 5.1 renders a colored globe and documents orbital data limits", () => {
+test("NEXUS 6.0 retains the colored globe and explains orbital data limits", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
@@ -141,4 +141,36 @@ test("NEXUS 5.1 renders a colored globe and documents orbital data limits", () =
   assert.match(css, /radial-gradient/);
   assert.match(css, /orbital-panel/);
   assert.match(readme, /no ofrece rastreo preciso/);
+});
+
+
+test("NEXUS 6.0 exposes three modes and clearly labels the weather data limits", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
+  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
+
+  assert.match(html, /BUILD 6\.0/);
+  assert.match(html, /id="cyberModeBtn"/);
+  assert.match(html, /id="weatherModeBtn"/);
+  assert.match(html, /id="orbitalModeBtn"/);
+  assert.match(html, /id="weatherControls"/);
+  assert.match(html, /id="radarTimeSlider"/);
+  assert.match(html, /id="weatherPointTitle"/);
+  assert.match(html, /rainviewer\.com/);
+  assert.match(html, /open-meteo\.com/);
+
+  assert.match(app, /api\.rainviewer\.com\/public\/weather-maps\.json/);
+  assert.match(app, /RADAR_REFRESH_MIN_MS = 5 \* 60 \* 1000/);
+  assert.match(app, /slice\(-13\)/);
+  assert.match(app, /api\.open-meteo\.com\/v1\/forecast/);
+  assert.match(app, /function setMapMode/);
+  assert.match(app, /function lookupWeatherAt/);
+  assert.match(app, /nexus-radar-layer/);
+  assert.match(app, /sin cobertura/);
+
+  assert.match(css, /map-mode-tabs/);
+  assert.match(css, /weather-controls/);
+  assert.match(readme, /dos horas de historial/);
+  assert.match(readme, /no dibuja posiciones orbitales exactas/);
 });
