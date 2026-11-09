@@ -1,4 +1,4 @@
-# NEXUS 6.3.1 — Global Earth Intelligence
+# NEXUS 6.4 — Global Earth Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -47,6 +47,15 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El recolector mantiene `data/publications-history.json`: hasta 2.000 publicaciones oficiales, deduplicadas y con retención de 365 días. El explorador combina el archivo con el snapshot reciente y muestra hasta 100 resultados por consulta.
 - El archivo conserva solo título, fuente, tipo, fecha y enlace HTTPS oficial. Es un historial de publicaciones, no un registro exhaustivo de incidentes confirmados.
 
+## NEXUS 6.4: Earth Imagery · imágenes satelitales reales
+
+- Se incorpora el modo **SATELLITE IMAGERY** sobre el mismo globo 3D MapLibre, mediante teselas raster públicas de NASA GIBS (EPSG:3857).
+- Capas disponibles: MODIS Terra True Color, MODIS Aqua True Color, GOES-East ABI GeoColor y GOES-West ABI GeoColor.
+- El control temporal permite recorrer los últimos 14 días con un selector de fecha UTC y reproducción diaria. La transparencia ajusta cuánto se superpone la imagen a la cartografía base.
+- Las teselas se solicitan directamente al servicio público NASA GIBS; NEXUS no descarga ni almacena mosaicos completos. La caché de teselas queda a cargo del navegador y del proveedor.
+- MODIS es un mosaico diario de cobertura amplia, con huecos posibles por nubes, noche o ausencia de pasada. GOES-East/West son coberturas regionales. GeoColor ofrece color natural de día y composición multiespectral infrarroja de noche.
+- La fecha indica el día de la composición publicada, no una hora exacta de captura ni una transmisión de video en directo. GIBS advierte que parte de las visualizaciones puede aparecer incompleta mientras se procesa la adquisición diaria.
+
 ## NEXUS 6.3: Cyber, Global Weather y Orbital
 
 ### Globo base
@@ -88,7 +97,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 
 ## Pruebas
 
-- La interfaz debe mostrar `BUILD 6.3`, modos Cyber/Global Weather/Orbital, la línea de tiempo meteorológica de 24 horas, controles orbitales, filtros del explorador y aviso de centroide nacional.
+- La interfaz debe mostrar `BUILD 6.4`, modos Cyber/Global Weather/Orbital, la línea de tiempo meteorológica de 24 horas, controles orbitales, filtros del explorador y aviso de centroide nacional.
 - `update_publication_history` debe deduplicar y validar el host HTTPS de cada publicación.
 - Las capas de centroides nacionales deben declarar `maxzoom: 5.2`.
 
@@ -103,3 +112,9 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 GitHub Pages: Settings → Pages → Deploy from a branch → `main` → `/(root)`.
 
 URL: https://thiandominguez100-stack.github.io/hackeomasivo/
+
+
+### Fuentes de imágenes satelitales
+- NASA GIBS, servicios y dimensiones temporales: https://nasa-gibs.github.io/gibs-api-docs/access-basics/
+- Catálogo de visualizaciones y resolución: https://nasa-gibs.github.io/gibs-api-docs/available-visualizations/
+- NASA Worldview · GOES-East ABI GeoColor: https://worldview.earthdata.nasa.gov/?l=GOES-East_ABI_GeoColor
