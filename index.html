@@ -83,17 +83,28 @@
         <button id="orbitalModeBtn" class="mode-tab" type="button" aria-pressed="false">ORBITAL</button>
       </div>
       <div id="mapAnnotation" class="map-annotation"><span class="legend-circle"></span> País de registro de red · centroide aproximado · no localiza incidentes ni víctimas</div>
-      <div id="map" role="img" aria-label="Globo 3D con marcadores agregados de actividad de sensores por país"></div>
+      <div id="map" role="img" aria-label="Globo 3D del observatorio global con capas meteorológicas, cibernéticas y contexto orbital">
+        <div id="orbitalVisualNote" class="orbital-visual-note" hidden>ANILLOS ILUSTRATIVOS · NO SON TRAYECTORIAS REALES</div>
+      </div>
       <div id="weatherControls" class="weather-controls" hidden>
         <div class="weather-control-head">
           <div><label>PRECIPITACIÓN OBSERVADA</label><h3>Radar meteorológico · últimas 2 horas</h3></div>
-          <button id="loadRadarBtn" class="small-action" type="button">ACTUALIZAR RADAR</button>
+          <div class="weather-button-row">
+            <button id="loadWeatherGridBtn" class="small-action" type="button">ACTUALIZAR MODELO</button>
+            <button id="loadRadarBtn" class="small-action" type="button">ACTUALIZAR RADAR</button>
+          </div>
         </div>
         <div class="radar-player">
           <button id="radarPlayBtn" class="small-action play-action" type="button" disabled>▶ REPRODUCIR</button>
           <input id="radarTimeSlider" type="range" min="0" max="0" value="0" step="1" disabled aria-label="Elegir momento del radar">
           <span id="radarFrameTime" class="radar-frame-time">Cargando radar…</span>
         </div>
+        <div class="weather-legend">
+          <span><i class="legend-temp"></i> COLOR = TEMPERATURA</span>
+          <span>FLECHA = DIRECCIÓN DEL VIENTO</span>
+          <span>24 PUNTOS DE MODELO</span>
+        </div>
+        <p id="weatherGridStatus" class="weather-grid-status">Preparando malla meteorológica global…</p>
         <div class="weather-point-card" aria-live="polite">
           <div><label>CONSULTA EN EL MAPA</label><h3 id="weatherPointTitle">Seleccioná un punto del planeta</h3></div>
           <div class="weather-point-grid">
