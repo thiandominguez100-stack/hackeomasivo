@@ -1,6 +1,12 @@
-# NEXUS 6.3 — Global Earth Intelligence
+# NEXUS 6.3.1 — Global Earth Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
+
+## NEXUS 6.3.1: corrección del visor orbital
+
+- El motor CesiumJS 1.144.0 y sus módulos `Workers` se sirven ahora desde el mismo CDN de paquete (`jsDelivr`), con `CESIUM_BASE_URL` alineada con esa distribución. Esto evita mezclar el motor principal con módulos auxiliares alojados en otro host.
+- Se invalida la caché de la aplicación para que GitHub Pages y las instalaciones PWA descarguen la corrección.
+- El cambio no altera los elementos OMM, la lista de misiones civiles permitidas ni el cálculo SGP4.
 
 ## Cobertura de datos
 
