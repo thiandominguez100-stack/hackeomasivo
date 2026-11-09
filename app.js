@@ -721,6 +721,7 @@
     $("cityJumpControl").hidden = !cyberActive;
     $("orbitalPanel").classList.toggle("mode-focus", mode === "orbital");
     if (map) {
+      map.resize();
       ["nexus-country-glow", "nexus-country-points"].forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", cyberActive ? "visible" : "none");
       });
@@ -733,12 +734,13 @@
       if (map.getLayer("nexus-radar-layer")) {
         map.setLayoutProperty("nexus-radar-layer", "visibility", weatherActive ? "visible" : "none");
       }
-      ["nexus-weather-grid-points", "nexus-weather-grid-wind", "nexus-weather-selection-layer"].forEach((id) => {
+      ["nexus-weather-heatmap", "nexus-weather-grid-points", "nexus-weather-grid-wind", "nexus-weather-selection-layer"].forEach((id) => {
         if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", weatherActive ? "visible" : "none");
       });
       $("map").classList.toggle("weather-active", weatherActive);
       $("map").classList.toggle("orbital-active", mode === "orbital");
       $("orbitalVisualNote").hidden = mode !== "orbital";
+      map.triggerRepaint();
     }
     if (!weatherActive) pauseRadarPlayback();
 
@@ -765,6 +767,7 @@
       if (mapReady) {
         loadRadarFrames();
         loadWeatherGrid();
+        safeText($("mapStatus"), "Cargando capas meteorológicas globales…");
       }
     } else {
       safeText(heading, "Orbital Intelligence · catálogo público");
@@ -840,12 +843,33 @@
       map.addSource("nexus-country-observations", { type: "geojson", data: emptyCollection() });
       map.addSource("nexus-weather-grid", { type: "geojson", data: emptyCollection() });
       map.addLayer({
+        id: "nexus-weather-heatmap",
+        type: "heatmap",
+        source: "nexus-weather-grid",
+        layout: { visibility: "none" },
+        paint: {
+          "heatmap-weight": 1,
+          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0.9, 4, 1.25, 7, 1.6],
+          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 34, 2, 52, 5, 78],
+          "heatmap-opacity": 0.62,
+          "heatmap-color": [
+            "interpolate", ["linear"], ["heatmap-density"],
+            0, "rgba(30,75,150,0)",
+            0.18, "rgba(55,130,220,0.28)",
+            0.38, "rgba(65,195,220,0.48)",
+            0.58, "rgba(65,205,145,0.58)",
+            0.78, "rgba(245,195,80,0.68)",
+            1, "rgba(235,95,70,0.78)"
+          ]
+        }
+      });
+      map.addLayer({
         id: "nexus-weather-grid-points",
         type: "circle",
         source: "nexus-weather-grid",
         layout: { visibility: "none" },
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 4.5, 3, 7, 6, 8.5],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 6.5, 3, 9, 6, 12],
           "circle-color": [
             "interpolate", ["linear"], ["get", "temperature"],
             -20, "#5687d9", 0, "#55b9dc", 15, "#57c78d", 25, "#efc45d", 35, "#e87552"
