@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111b">
   <meta name="description" content="NEXUS: observatorio global de ciberseguridad, meteorología y contexto orbital mediante fuentes públicas.">
-  <title>NEXUS 6.2 — Global Earth Intelligence</title>
+  <title>NEXUS 6.3 — Global Earth Intelligence</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/favicon.svg">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=17">
+  <link rel="stylesheet" href="./styles.css?v=18">
 </head>
 <body>
 <div class="shell">
   <header>
-    <a class="brand" href="./?release=6.2" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
+    <a class="brand" href="./?release=6.3" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
     <div class="header-right">
       <div class="status-pill" id="overallStatus"><i></i><span>Conectando fuentes</span></div>
       <span class="utc-clock" id="clock">--:--:-- UTC</span>
@@ -24,7 +24,7 @@
 
   <section class="hero">
     <div>
-      <label class="eyebrow">CYBER · WEATHER · ORBITAL · BUILD 6.2</label>
+      <label class="eyebrow">CYBER · WEATHER · ORBITAL · BUILD 6.3</label>
       <h1>Global <em>Earth Intelligence</em> Observatory</h1>
       <p>Observación defensiva, meteorología mundial y contexto espacial con fuentes públicas verificables.</p>
     </div>
@@ -95,8 +95,16 @@
               <option value="precipitation">Precipitación</option>
               <option value="wind">Viento</option>
               <option value="humidity">Humedad</option>
-              <option value="clouds">Nubosidad</option>
+              <option value="clouds">Nubosidad total</option>
+              <option value="cloudLow">Nubes bajas</option>
+              <option value="cloudMid">Nubes medias</option>
+              <option value="cloudHigh">Nubes altas</option>
               <option value="pressure">Presión</option>
+              <option value="uv">Índice UV</option>
+              <option value="radiation">Radiación solar</option>
+              <option value="visibility">Visibilidad</option>
+              <option value="cape">Energía convectiva (CAPE)</option>
+              <option value="soilMoisture">Humedad del suelo</option>
             </select>
             <button id="loadWeatherGridBtn" class="small-action" type="button">ACTUALIZAR MODELO</button>
             <button id="loadRadarBtn" class="small-action" type="button">ACTUALIZAR RADAR</button>
@@ -106,6 +114,11 @@
           <button id="radarPlayBtn" class="small-action play-action" type="button" disabled>▶ REPRODUCIR RADAR</button>
           <input id="radarTimeSlider" type="range" min="0" max="0" value="0" step="1" disabled aria-label="Elegir momento del radar">
           <span id="radarFrameTime" class="radar-frame-time">Radar opcional · cobertura variable</span>
+        </div>
+        <div class="weather-forecast-player">
+          <button id="weatherPlayBtn" class="small-action play-action" type="button" disabled>▶ ANIMAR PRONÓSTICO</button>
+          <input id="weatherTimeSlider" type="range" min="0" max="0" value="0" step="1" disabled aria-label="Elegir hora del pronóstico global">
+          <span id="weatherTimeLabel" class="radar-frame-time">Pronóstico horario · esperando modelo</span>
         </div>
         <div class="weather-legend">
           <span><i class="legend-temp"></i> COLOR = <b id="weatherLegendLabel">TEMPERATURA</b></span>
@@ -130,6 +143,10 @@
       <div id="orbitalControls" class="orbital-controls" hidden>
         <div class="orbital-control-head">
           <div><label>ÓRBITAS CIVILES · DATOS OMM</label><h3>Satélites meteorológicos y de observación de la Tierra</h3></div>
+          <div class="orbital-visibility-toggles">
+            <label><input id="orbitalTrailsToggle" type="checkbox" checked> Mostrar órbitas</label>
+            <label><input id="orbitalLabelsToggle" type="checkbox" checked> Mostrar nombres</label>
+          </div>
           <button id="loadOrbitalBtn" class="small-action" type="button">ACTUALIZAR CATÁLOGO</button>
         </div>
         <div class="orbital-stats">
@@ -253,13 +270,13 @@
   </section>
 
   <footer>
-    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.2</span>
+    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.3</span>
     <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></span>
   </footer>
 </div>
 <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
 <script>window.CESIUM_BASE_URL = "https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/";</script>
 <script src="https://cesium.com/downloads/cesiumjs/releases/1.144/Build/Cesium/Cesium.js"></script>
-<script src="./app.js?v=18"></script>
+<script src="./app.js?v=19"></script>
 </body>
 </html>
