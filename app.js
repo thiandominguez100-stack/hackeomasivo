@@ -398,7 +398,7 @@
     }
     map = new maplibregl.Map({
       container: "map",
-      style: "https://tiles.openfreemap.org/styles/dark",
+      style: "https://tiles.openfreemap.org/styles/liberty",
       center: [0, 20],
       zoom: 1.45,
       minZoom: 1,
@@ -412,6 +412,20 @@
 
     map.on("load", () => {
       map.setProjection({ type: "globe" });
+      try {
+        if (typeof map.setSky === "function") {
+          map.setSky({
+            "atmosphere-blend": [
+              "interpolate", ["linear"], ["zoom"],
+              0, 1,
+              5, 1,
+              7, 0
+            ]
+          });
+        }
+      } catch (error) {
+        console.warn("NEXUS atmosphere effect unavailable:", error);
+      }
       map.addSource("nexus-country-observations", { type: "geojson", data: emptyCollection() });
       map.addLayer({
         id: "nexus-country-glow", type: "circle", source: "nexus-country-observations", maxzoom: 5.2,
