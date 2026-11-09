@@ -52,12 +52,30 @@
     "cloud_cover", "precipitation", "wind_speed_10m", "wind_direction_10m"
   ].join(",");
   const WEATHER_GRID_COORDS = [];
-  [-60, -20, 20, 60].forEach((latitude) => {
-    [-150, -90, -30, 30, 90, 150].forEach((longitude) => {
+  for (let latitude = -82.5; latitude <= 82.5; latitude += 15) {
+    for (let longitude = -172.5; longitude <= 172.5; longitude += 15) {
       WEATHER_GRID_COORDS.push({ latitude, longitude });
-    });
-  });
-  const WEATHER_GRID_REFRESH_MS = 10 * 60 * 1000;
+    }
+  }
+  const WEATHER_GRID_REFRESH_MS = 30 * 60 * 1000;
+  const WEATHER_VISUALS = {
+    temperature: { label: "TEMPERATURA", property: "temperature", stops: [-35, "#3859a8", -10, "#398bc5", 5, "#54b9a9", 20, "#d6c85e", 35, "#e87950", 48, "#a93d65"] },
+    precipitation: { label: "PRECIPITACIÓN", property: "precipitation", stops: [0, "#233c65", 0.2, "#397dbc", 1, "#39b9bd", 3, "#62c978", 8, "#e4ca53", 20, "#e97d42", 50, "#bd3c62"] },
+    wind: { label: "VIENTO", property: "windSpeed", stops: [0, "#275b96", 10, "#36a3bd", 25, "#54c982", 45, "#e1c34e", 70, "#e98046", 100, "#b64464"] },
+    humidity: { label: "HUMEDAD", property: "humidity", stops: [0, "#c17b4b", 20, "#d1b95d", 40, "#7dbd83", 60, "#3eafad", 80, "#367fbe", 100, "#4d58a5"] },
+    clouds: { label: "NUBOSIDAD", property: "cloudCover", stops: [0, "#14283b", 20, "#3c637e", 40, "#6d94a8", 60, "#a7bac5", 80, "#d0d6d8", 100, "#ffffff"] },
+    pressure: { label: "PRESIÓN", property: "pressure", stops: [940, "#7450a1", 970, "#447ac2", 990, "#3cb5b2", 1010, "#72bd77", 1030, "#d8bd4f", 1055, "#d66e48"] }
+  };
+  const ORBITAL_GROUP_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=WEATHER&FORMAT=JSON";
+  const ORBITAL_REFRESH_MS = 2 * 60 * 60 * 1000;
+  const CIVIL_WEATHER_MISSION = /^(NOAA(?:\\s|$)|SUOMI NPP|METOP(?:-|\\s|$)|METEOSAT|GOES(?:\\s|$)|HIMAWARI|FENGYUN|METEOR-M|ARKTIKA-M|INSAT-3D|GEO-KOMPSAT|ELEKTRO-L|SENTINEL-3|MTG-)/i;
+  let activeWeatherVariable = "temperature";
+  let orbitalViewer = null;
+  let orbitalSatellites = [];
+  let orbitalFetchedAt = 0;
+  let orbitalLoading = false;
+  let orbitalTickHandle = null;
+  let satelliteModulePromise = null;
 
   function safeText(node, value) {
     node.textContent = value === null || value === undefined || value === "" ? "—" : String(value);
@@ -394,13 +412,47 @@
     return arrows[Math.round((((Number(degrees) % 360) + 360) % 360) / 45) % 8];
   }
 
+  function weatherCellGeometry(latitude, longitude) {
+    const half = 7.5;
+    const west = longitude - half;
+    const east = longitude + half;
+    const south = Math.max(-90, latitude - half);
+    const north = Math.min(90, latitude + half);
+    return {
+      type: "Polygon",
+      coordinates: [[
+        [west, south], [east, south], [east, north], [west, north], [west, south]
+      ]]
+    };
+  }
+
+  function applyWeatherVariable(key) {
+    const visual = WEATHER_VISUALS[key] || WEATHER_VISUALS.temperature;
+    activeWeatherVariable = WEATHER_VISUALS[key] ? key : "temperature";
+    const expression = ["interpolate", ["linear"], ["coalesce", ["get", visual.property], 0]];
+    for (let i = 0; i < visual.stops.length; i += 2) {
+      expression.push(visual.stops[i], visual.stops[i + 1]);
+    }
+    if (mapReady && map && map.getLayer("nexus-weather-cells-fill")) {
+      map.setPaintProperty("nexus-weather-cells-fill", "fill-color", expression);
+      map.setLayoutProperty("nexus-weather-grid-wind", "visibility", activeWeatherVariable === "wind" ? "visible" : "none");
+      map.setLayoutProperty("nexus-weather-grid-points", "visibility", "visible");
+      map.triggerRepaint();
+    }
+    safeText($("weatherLegendLabel"), visual.label);
+    const select = $("weatherVariableSelect");
+    if (select && select.value !== activeWeatherVariable) select.value = activeWeatherVariable;
+    if (weatherGridRecords.length) {
+      safeText($("weatherGridStatus"), weatherGridRecords.length + " muestras distribuidas por todo el globo · " +
+        ageLabel(weatherGridRecords[0].time) + " · variable: " + visual.label.toLowerCase());
+    }
+  }
+
   async function loadWeatherGrid(force = false) {
     if (!mapReady || weatherGridLoading) return;
     if (!force && weatherGridRecords.length &&
         Date.now() - weatherGridFetchedAt < WEATHER_GRID_REFRESH_MS) {
-      safeText($("weatherGridStatus"), weatherGridRecords.length +
-        " puntos globales · " + ageLabel(weatherGridRecords[0].time) +
-        " · color = temperatura · flecha = viento");
+      applyWeatherVariable(activeWeatherVariable);
       return;
     }
 
@@ -408,9 +460,9 @@
     const button = $("loadWeatherGridBtn");
     if (button) {
       button.disabled = true;
-      safeText(button, "ACTUALIZANDO…");
+      safeText(button, "CARGANDO MODELO…");
     }
-    safeText($("weatherGridStatus"), "Consultando campos meteorológicos globales…");
+    safeText($("weatherGridStatus"), "Descargando el modelo global · 288 ubicaciones · 11 variables…");
 
     try {
       const query = new URLSearchParams({
@@ -419,74 +471,98 @@
         current: WEATHER_CURRENT_FIELDS,
         wind_speed_unit: "kmh",
         precipitation_unit: "mm",
-        timezone: "GMT",
-        forecast_days: "1"
+        timezone: "GMT"
       });
       const response = await fetch("https://api.open-meteo.com/v1/forecast?" + query.toString(), {
         method: "GET",
         cache: "no-store",
         headers: { "Accept": "application/json" }
       });
-      if (!response.ok) throw new Error("Open‑Meteo respondió " + response.status);
+      if (!response.ok) throw new Error("Open-Meteo respondió " + response.status);
       const payload = await response.json();
       const rows = Array.isArray(payload) ? payload : [payload];
       if (rows.length !== WEATHER_GRID_COORDS.length) {
-        throw new Error("El proveedor devolvió " + rows.length + " puntos; se esperaban " +
-          WEATHER_GRID_COORDS.length + ".");
+        throw new Error("El proveedor devolvió " + rows.length + " ubicaciones; se esperaban " + WEATHER_GRID_COORDS.length + ".");
       }
 
       const records = [];
-      const features = [];
+      const pointFeatures = [];
+      const cellFeatures = [];
       rows.forEach((row, index) => {
         const current = row && row.current;
-        const latitude = Number(row && row.latitude);
-        const longitude = Number(row && row.longitude);
-        if (!current || !Number.isFinite(latitude) || !Number.isFinite(longitude) ||
-            !Number.isFinite(Number(current.temperature_2m)) ||
-            !Number.isFinite(Number(current.wind_speed_10m)) ||
-            !Number.isFinite(Number(current.wind_direction_10m))) return;
-
+        const gridPoint = WEATHER_GRID_COORDS[index];
+        if (!current || !gridPoint) return;
+        const numberOrNull = (value) => value === null || value === undefined || value === "" || !Number.isFinite(Number(value))
+          ? null : Number(value);
         const record = {
-          latitude,
-          longitude,
-          temperature: Number(current.temperature_2m),
-          windSpeed: Number(current.wind_speed_10m),
-          windDirection: Number(current.wind_direction_10m),
-          cloudCover: Number(current.cloud_cover),
-          precipitation: Number(current.precipitation),
+          latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : gridPoint.latitude,
+          longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : gridPoint.longitude,
+          temperature: numberOrNull(current.temperature_2m),
+          feelsLike: numberOrNull(current.apparent_temperature),
+          humidity: numberOrNull(current.relative_humidity_2m),
+          dewPoint: numberOrNull(current.dew_point_2m),
+          cloudCover: numberOrNull(current.cloud_cover),
+          precipitation: numberOrNull(current.precipitation),
+          rain: numberOrNull(current.rain),
+          snowfall: numberOrNull(current.snowfall),
+          pressure: numberOrNull(current.pressure_msl),
+          windSpeed: numberOrNull(current.wind_speed_10m),
+          windDirection: numberOrNull(current.wind_direction_10m),
+          weatherCode: numberOrNull(current.weather_code),
           time: String(current.time || "")
         };
+        if (record.temperature === null) return;
         records.push(record);
-        features.push({
+        const properties = {
+          temperature: record.temperature,
+          feelsLike: record.feelsLike,
+          humidity: record.humidity,
+          dewPoint: record.dewPoint,
+          cloudCover: record.cloudCover,
+          precipitation: record.precipitation,
+          rain: record.rain,
+          snowfall: record.snowfall,
+          pressure: record.pressure,
+          windSpeed: record.windSpeed,
+          windDirection: record.windDirection,
+          windArrow: windArrow(record.windDirection),
+          weatherCode: record.weatherCode,
+          time: record.time
+        };
+        pointFeatures.push({
           type: "Feature",
-          properties: {
-            temperature: record.temperature,
-            windSpeed: record.windSpeed,
-            windDirection: record.windDirection,
-            windArrow: windArrow(record.windDirection),
-            cloudCover: record.cloudCover,
-            precipitation: record.precipitation,
-            time: record.time
-          },
-          geometry: { type: "Point", coordinates: [longitude, latitude] }
+          properties,
+          geometry: { type: "Point", coordinates: [record.longitude, record.latitude] }
+        });
+        cellFeatures.push({
+          type: "Feature",
+          properties,
+          geometry: weatherCellGeometry(gridPoint.latitude, gridPoint.longitude)
         });
       });
 
-      if (!features.length) throw new Error("El modelo no devolvió puntos meteorológicos utilizables.");
-      const source = map.getSource("nexus-weather-grid");
-      if (!source) throw new Error("La capa meteorológica todavía no está preparada.");
-      source.setData({ type: "FeatureCollection", features });
+      if (cellFeatures.length < 200) {
+        throw new Error("El modelo global entregó solo " + cellFeatures.length + " celdas válidas; no se reemplazó la última capa buena.");
+      }
+      const pointSource = map.getSource("nexus-weather-grid");
+      const cellSource = map.getSource("nexus-weather-cells");
+      if (!pointSource || !cellSource) throw new Error("Las capas meteorológicas todavía no están preparadas.");
+      pointSource.setData({ type: "FeatureCollection", features: pointFeatures });
+      cellSource.setData({ type: "FeatureCollection", features: cellFeatures });
       weatherGridRecords = records;
       weatherGridFetchedAt = Date.now();
-      safeText($("weatherGridStatus"), features.length + " puntos globales · " +
+      safeText($("weatherCoverageCount"), cellFeatures.length + " CELDAS ACTIVAS");
+      safeText($("weatherGridStatus"), cellFeatures.length + " celdas de modelo cubriendo la esfera · " +
         (records[0].time ? dateLabel(records[0].time + "Z") : "hora no disponible") +
-        " · color = temperatura · flecha = viento");
-      safeText($("mapStatus"), "Modelo meteorológico global · " + features.length +
-        " muestras · estimaciones por cuadrícula");
+        " · actualización automática cada 30 min");
+      safeText($("mapStatus"), "Modelo mundial cargado · " + cellFeatures.length + " celdas · 11 variables disponibles");
+      applyWeatherVariable(activeWeatherVariable);
+      map.triggerRepaint();
     } catch (error) {
       console.warn("NEXUS global weather grid:", error);
-      safeText($("weatherGridStatus"), "No se pudo cargar la malla global. La consulta por punto sigue disponible.");
-      safeText($("mapStatus"), "Modelo global temporalmente no disponible · probá actualizar");
+      safeText($("weatherGridStatus"), "No se pudo actualizar el modelo global: " + (error.message || "error de red") +
+        ". Se conserva la última capa válida si existe.");
+      safeText($("mapStatus"), "Fuente meteorológica temporalmente no disponible");
     } finally {
       weatherGridLoading = false;
       if (button) {
@@ -502,14 +578,20 @@
     const p = feature.properties || {};
     const lines = [
       ["Temperatura", displayNumber(p.temperature, 1, " °C")],
-      ["Viento", displayNumber(p.windSpeed, 1, " km/h") + " · " + windDirectionLabel(p.windDirection)],
-      ["Humedad de nubes", "Nubosidad " + displayNumber(p.cloudCover, 0, " %")],
+      ["Sensación térmica", displayNumber(p.feelsLike, 1, " °C")],
+      ["Humedad relativa", displayNumber(p.humidity, 0, " %")],
+      ["Punto de rocío", displayNumber(p.dewPoint, 1, " °C")],
+      ["Nubosidad", displayNumber(p.cloudCover, 0, " %")],
       ["Precipitación", displayNumber(p.precipitation, 1, " mm")],
-      ["Referencia", p.time || "No disponible"]
+      ["Lluvia", displayNumber(p.rain, 1, " mm")],
+      ["Nieve", displayNumber(p.snowfall, 1, " cm")],
+      ["Presión", displayNumber(p.pressure, 0, " hPa")],
+      ["Viento", displayNumber(p.windSpeed, 1, " km/h") + " · " + windDirectionLabel(p.windDirection)],
+      ["Hora del modelo", p.time || "No disponible"]
     ];
-    const node = popupNode("Muestra de modelo meteorológico", lines,
-      "Estimación de Open‑Meteo en una cuadrícula global de referencia; no es una estación meteorológica ni una observación directa.");
-    new maplibregl.Popup({ closeButton: true, maxWidth: "310px" })
+    const node = popupNode("Celda de modelo meteorológico", lines,
+      "Open-Meteo · estimación interpolada a una malla mundial de referencia de 15 grados; no es una medición de estación.");
+    new maplibregl.Popup({ closeButton: true, maxWidth: "320px" })
       .setLngLat(event.lngLat).setDOMContent(node).addTo(map);
   }
 
