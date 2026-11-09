@@ -42,7 +42,7 @@ test("no generated simulation events or fake route fields are present", () => {
 
 test("published page is an observatory and does not load the old simulator", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  assert.match(html, /BUILD 5.0/);
+  assert.match(html, /BUILD 5.1/);
   assert.match(html, /DShield/);
   assert.match(html, /CISA/);
   assert.doesNotMatch(html, /simulation\.js/);
@@ -86,7 +86,7 @@ test("reports feed tracks the expanded eight-source allowlist", () => {
 test("interface includes the eight-source health list", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
-  assert.match(html, /BUILD 5\.0/);
+  assert.match(html, /BUILD 5.1/);
   assert.match(html, /reportSourcesHealth/);
   assert.match(app, /acscAustralia/);
   assert.match(app, /certUa/);
@@ -97,7 +97,7 @@ test("NEXUS 5.0 warns that country markers are national centroids and hides them
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   assert.match(html, /centroide nacional aproximado/);
-  assert.match(html, /BUILD 5\.0/);
+  assert.match(html, /BUILD 5.1/);
   assert.match(app, /maxzoom: 5\.2/);
   assert.match(app, /marcadores nacionales ocultos/);
   assert.match(app, /No indica dónde ocurrió un incidente/);
@@ -123,4 +123,22 @@ test("publication history archive is loaded by the interface and documented as m
   assert.match(app, /historyItems/);
   assert.match(app, /slice\(0, 100\)/);
   assert.match(readme, /retención de 365 días/);
+});
+
+
+test("NEXUS 5.1 renders a colored globe and documents orbital data limits", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
+  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
+  assert.match(html, /BUILD 5\.1/);
+  assert.match(html, /release=5\.1/);
+  assert.match(html, /Contexto orbital/);
+  assert.match(html, /celestrak\.org\/NORAD\/documentation\/gp-data-formats\.php/);
+  assert.match(app, /styles\/liberty/);
+  assert.match(app, /setSky/);
+  assert.match(app, /atmosphere-blend/);
+  assert.match(css, /radial-gradient/);
+  assert.match(css, /orbital-panel/);
+  assert.match(readme, /no ofrece rastreo preciso/);
 });
