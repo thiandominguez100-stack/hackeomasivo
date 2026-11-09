@@ -69,7 +69,7 @@
   };
   const ORBITAL_GROUP_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=WEATHER&FORMAT=JSON";
   const ORBITAL_REFRESH_MS = 2 * 60 * 60 * 1000;
-  const CIVIL_WEATHER_MISSION = /^(NOAA(?:\\s|$)|SUOMI NPP|METOP(?:-|\\s|$)|METEOSAT|GOES(?:\\s|$)|HIMAWARI|FENGYUN|METEOR-M|ARKTIKA-M|INSAT-3D|GEO-KOMPSAT|ELEKTRO-L|SENTINEL-3|MTG-)/i;
+  const CIVIL_WEATHER_MISSION = /^(NOAA(?:\s|$)|SUOMI NPP|METOP(?:-|\s|$)|METEOSAT|GOES(?:\s|$)|HIMAWARI|FENGYUN|METEOR-M|ARKTIKA-M|INSAT-3D|GEO-KOMPSAT|ELEKTRO-L|SENTINEL-3|MTG-)/i;
   let activeWeatherVariable = "temperature";
   let orbitalViewer = null;
   let orbitalSatellites = [];
@@ -642,7 +642,7 @@
     if (!mapReady || radarLoading) return;
     if (radarFrames.length && Date.now() - radarFetchedAt < RADAR_REFRESH_MIN_MS) {
       showRadarFrame(radarFrames.length - 1);
-      safeText($("mapStatus"), "Radar de lluvia · historial reciente · cobertura variable");
+      safeText($("mapStatus"), "Modelo global · campos meteorológicos sobre todo el globo");
       return;
     }
 
@@ -1065,7 +1065,7 @@
     $("cityJumpControl").hidden = !cyberActive;
     $("orbitalPanel").classList.toggle("mode-focus", orbitalActive);
 
-    if (map && !orbitalActive) {
+    if (map && mapReady && !orbitalActive) {
       window.requestAnimationFrame(() => {
         if (!map || $("map").hidden) return;
         map.resize();
@@ -1340,7 +1340,7 @@
           return;
         }
         if (activeMapMode === "orbital") {
-          safeText($("mapStatus"), "Modo orbital · contexto de catálogo agregado");
+          safeText($("orbitalStatus"), "Escena orbital 3D · satélites civiles meteorológicos");
           return;
         }
         const zoom = map.getZoom();
