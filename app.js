@@ -462,7 +462,10 @@
   };
 
   function formatWeatherTime(value) {
-    const date = new Date(value);
+    const raw = String(value || "");
+    const normalized = /^\\d{4}-\\d{2}-\\d{2}T/.test(raw) && !/(?:Z|[+-]\\d{2}:\\d{2})$/i.test(raw)
+      ? raw + "Z" : raw;
+    const date = new Date(normalized);
     if (Number.isNaN(date.getTime())) return String(value || "Hora no disponible");
     return date.toLocaleString("es-AR", {
       timeZone: "UTC", weekday: "short", day: "2-digit", month: "short",
