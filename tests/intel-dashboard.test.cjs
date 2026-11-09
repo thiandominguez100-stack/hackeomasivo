@@ -242,7 +242,7 @@ test("NEXUS 6.3 adds a 24-hour global weather forecast timeline", () => {
   assert.match(app, /function startOrbitalUpdates/);
   assert.match(app, /function pauseOrbitalUpdates/);
   assert.match(app, /orbitalViewer\.resolutionScale = 0\.88/);
-  assert.match(app, /Date\.now\(\) - orbitalTrailRefreshAt >= 60000/);
+  assert.match(app, /Date\.now\(\) - orbitalTrailRefreshAt >= 120000/);
   assert.match(css, /weather-forecast-player/);
   assert.match(css, /orbital-visibility-toggles/);
   assert.match(readme, /siguientes 24 horas/);
@@ -254,8 +254,8 @@ test("NEXUS 6.4 keeps Cesium and its worker modules from the same pinned CDN", (
   const sw = fs.readFileSync(path.join(__dirname, "../sw.js"), "utf8");
   assert.match(html, /window\.CESIUM_BASE_URL = "https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\//);
   assert.match(html, /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\/Cesium\.js"><\/script>/);
-  assert.match(html, /app\.js\?v=23/);
-  assert.match(sw, /nexus-shell-v23/);
+  assert.match(html, /app\.js\?v=24/);
+  assert.match(sw, /nexus-shell-v24/);
 });
 
 
@@ -264,7 +264,7 @@ test("NEXUS 6.4 adds NASA GIBS satellite imagery to the 3D globe", () => {
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6\.4/);
+  assert.match(html, /BUILD 6\.5/);
   assert.match(html, /id="satelliteModeBtn"/);
   assert.match(html, /id="satelliteControls"/);
   assert.match(html, /id="satelliteLayerSelect"/);
@@ -293,10 +293,10 @@ test("NEXUS 6.4.1 keeps the Earth visible in Orbital mode without external tile 
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const sw = fs.readFileSync(path.join(__dirname, "../sw.js"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6\.4\.1/);
+  assert.match(html, /BUILD 6\.5/);
   assert.match(html, /id="orbitalHomeBtn"/);
   assert.match(html, /id="orbitalSurfaceStatus"/);
-  assert.match(html, /release=6\.4\.1/);
+  assert.match(html, /release=6\.5/);
   assert.match(app, /Assets\/Textures\/NaturalEarthII/);
   assert.match(app, /new Cesium\.GeographicTilingScheme/);
   assert.match(app, /orbitalViewer\.scene\.globe\.baseColor/);
@@ -305,6 +305,63 @@ test("NEXUS 6.4.1 keeps the Earth visible in Orbital mode without external tile 
   assert.match(app, /detailProvider\.errorEvent\.addEventListener/);
   assert.doesNotMatch(app, /orbitalViewer\.flyTo\(orbitalSatellites\.map/);
   assert.match(css, /orbital-surface-status/);
-  assert.match(sw, /nexus-shell-v23/);
+  assert.match(sw, /nexus-shell-v24/);
   assert.match(readme, /textura Natural Earth II/);
+});
+
+
+test("NEXUS 6.5 derives source freshness from timestamps and preserves per-source status", () => {
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  assert.match(html, /BUILD 6\.5/);
+  assert.match(app, /function ageMinutes/);
+  assert.match(app, /function freshnessStatus/);
+  assert.match(app, /freshnessStatus\(dshield, 120\)/);
+  assert.match(app, /freshnessStatus\(cisa, 120\)/);
+  assert.match(app, /freshnessStatus\(reportStates\[key\], 180\)/);
+  assert.match(app, /último aviso/);
+  assert.match(app, /atraso mayor a 120 min/);
+});
+
+test("NEXUS 6.5 compares three global weather models only for a selected point", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
+  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
+  assert.match(html, /id="weatherModelComparison"/);
+  assert.match(html, /id="weatherModelComparisonStatus"/);
+  assert.match(app, /ecmwf_ifs025/);
+  assert.match(app, /ncep_gfs_seamless/);
+  assert.match(app, /cmc_gem_seamless/);
+  assert.match(app, /function summarizeModelForecast/);
+  assert.match(app, /function loadWeatherModelComparison/);
+  assert.match(app, /WEATHER_MODEL_CACHE_MS = 30 \* 60 \* 1000/);
+  assert.match(app, /forecast_hours: "24"/);
+  assert.match(app, /void loadWeatherModelComparison\(lat, lon, controller\.signal\)/);
+  assert.match(app, /Math\.max\(\.\.\.values\) - Math\.min\(\.\.\.values\)/);
+  assert.match(css, /weather-model-table/);
+  assert.match(readme, /ECMWF IFS, NOAA GFS y GEM Global/);
+  assert.match(readme, /no la interpreta como probabilidad/);
+});
+
+test("NEXUS 6.5 reuses NASA raster layers and reports satellite tile request errors", () => {
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  assert.match(app, /existingSource\.setTiles\(\[tileUrl\]\)/);
+  assert.match(app, /satelliteLoadGeneration/);
+  assert.match(app, /satelliteTileErrorCount \+= 1/);
+  assert.match(app, /map\.once\("idle"/);
+  assert.doesNotMatch(app, /if \(map\.getLayer\(layerId\)\) map\.removeLayer\(layerId\)/);
+});
+
+test("NEXUS 6.5 reduces orbital rendering work and pauses hidden tabs", () => {
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const updateBlock = app.slice(
+    app.indexOf("function updateOrbitalPositions"),
+    app.indexOf("function drawOrbitalCatalog")
+  );
+  assert.match(app, /orbitalTrailRefreshAt >= 120000/);
+  assert.match(app, /step <= 48/);
+  assert.match(app, /document\.hidden\) return/);
+  assert.match(app, /document\.addEventListener\("visibilitychange"/);
+  assert.doesNotMatch(updateBlock, /entity\.description/);
 });
