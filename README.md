@@ -1,4 +1,4 @@
-# NEXUS 5.1 — Earth & Orbital Intelligence
+# NEXUS 6.0 — Global Earth Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -49,6 +49,24 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El catálogo público no equivale a todos los objetos que existen: algunos satélites pequeños pueden tardar en identificarse y otros pueden no quedar identificados.
 - NEXUS muestra contexto orbital agregado y no ofrece rastreo preciso, trayectorias ni identificación individual de satélites estratégicos.
 
+## NEXUS 6.0: Cyber, Global Weather y Orbital
+
+### Global Weather
+- El modo meteorológico agrega un reproductor de cuadros de radar de precipitación de RainViewer. La API pública ofrece hasta dos horas de historial en intervalos de diez minutos; desde enero de 2026 no ofrece nowcast gratuito ni imágenes satelitales infrarrojas. La cobertura depende de los radares que cada proveedor local comparte y no es uniforme a escala planetaria.
+- La línea de tiempo anima únicamente los cuadros pasados disponibles. No muestra una predicción ni debe describirse como una imagen meteorológica global completa.
+- Al seleccionar un punto del mapa, NEXUS consulta Open-Meteo para temperatura, sensación térmica, viento, humedad, nubosidad y precipitación actuales según el modelo disponible. Son estimaciones de modelo con hora de referencia, no mediciones de estación en vivo.
+- NEXUS identifica la fuente y su hora, y conserva una degradación clara si un proveedor no está disponible. Se acredita a RainViewer y Open-Meteo en la interfaz. El endpoint gratuito de RainViewer está destinado a uso personal, educativo y comunitario de pequeña escala; no ofrece SLA.
+
+### Orbital Intelligence
+- La vista orbital es de contexto agregado. Enlaza al resumen SATCAT y a la documentación de CelesTrak.
+- No dibuja posiciones orbitales exactas ni trayectorias de objetos individuales. Un catálogo público no es exhaustivo, no equivale a telemetría en vivo y puede tener registros sin elementos actuales.
+- CelesTrak solicita espaciar las consultas GP aproximadamente cada dos horas y las consultas SATCAT de resumen no deben tratarse como actualización segundo a segundo.
+
+### Arquitectura de datos meteorológicos
+- El mapa base usa MapLibre GL JS. RainViewer aporta los mosaicos históricos de radar; Open-Meteo aporta consultas puntuales.
+- No requiere Firebase, claves privadas ni un servidor propio para estas consultas de solo lectura.
+- La aplicación no interpola lluvia donde no hay radar ni inventa nubes, viento u observaciones para cubrir regiones sin datos.
+
 ## Cómo interpretar los datos
 
 - Los reportes de DShield son observaciones enviadas por sensores participantes. No equivalen automáticamente a delitos ni a ataques confirmados; puede haber escáneres de investigación, infraestructura compartida o falsos positivos.
@@ -60,7 +78,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 
 ## Pruebas
 
-- La interfaz debe mostrar `BUILD 5.0`, filtros del explorador, estado del archivo histórico y aviso de centroide nacional.
+- La interfaz debe mostrar `BUILD 6.0`, modos Cyber/Global Weather/Orbital, filtros del explorador y aviso de centroide nacional.
 - `update_publication_history` debe deduplicar y validar el host HTTPS de cada publicación.
 - Las capas de centroides nacionales deben declarar `maxzoom: 5.2`.
 
