@@ -50,7 +50,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 ### Global Weather
 - El globo contiene una malla de hasta **288 celdas** de 15° de latitud/longitud, con muestras distribuidas por todo el planeta.
 - La interfaz permite colorear la superficie por temperatura, precipitación, viento, humedad, nubosidad o presión.
-- Cada celda conserva valores del modelo para temperatura, sensación térmica, humedad relativa, punto de rocío, nubosidad, precipitación, lluvia, nieve, presión, velocidad/dirección del viento y código meteorológico.
+- Cada celda conserva hasta 15 variables actuales admitidas por Open-Meteo: temperatura, sensación térmica, humedad relativa, nubosidad, precipitación, lluvia, chubascos, nieve, presión a nivel del mar, presión de superficie, velocidad/dirección del viento, ráfagas, código meteorológico y día/noche.
 - El navegador consulta Open-Meteo en una petición de múltiples ubicaciones; los datos se refrescan automáticamente cada 30 minutos y también se pueden solicitar manualmente.
 - Las celdas son estimaciones de modelo en una resolución visual de referencia de 15°, no observaciones de estaciones ni una simulación de alta resolución. Si una celda no tiene un dato válido, NEXUS no inventa su valor.
 - RainViewer se conserva como capa opcional de radar de precipitación histórica, solo en las regiones con cobertura de radar disponible y con hasta dos horas de historial. No es una capa de pronóstico ni una imagen meteorológica uniforme del planeta.
