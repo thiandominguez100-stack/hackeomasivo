@@ -1,4 +1,4 @@
-# NEXUS 6.4.1 — Global Earth Intelligence
+# NEXUS 6.5 — Global Earth Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -47,6 +47,15 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El recolector mantiene `data/publications-history.json`: hasta 2.000 publicaciones oficiales, deduplicadas y con retención de 365 días. El explorador combina el archivo con el snapshot reciente y muestra hasta 100 resultados por consulta.
 - El archivo conserva solo título, fuente, tipo, fecha y enlace HTTPS oficial. Es un historial de publicaciones, no un registro exhaustivo de incidentes confirmados.
 
+## NEXUS 6.5: calidad de datos y rendimiento
+
+- El panel calcula la vigencia con marcas de tiempo reales, no solo con el estado guardado por el recolector. DShield y CISA se marcan como anteriores tras 120 minutos sin una consulta exitosa; cada canal de avisos se marca como anterior tras 180 minutos. El snapshot completo también se marca como anterior después de 120 minutos.
+- Los ocho canales de avisos mantienen su estado individual. Un fallo de un organismo no convierte automáticamente en antiguos a los otros siete; cada fila distingue entre última consulta y fecha de la última publicación encontrada.
+- Al seleccionar una ubicación en Global Weather se solicitan, bajo demanda, pronósticos independientes de ECMWF IFS, NOAA GFS y GEM Global para las próximas 24 horas. NEXUS compara temperatura media, precipitación acumulada y viento máximo; muestra la dispersión entre salidas disponibles y no la interpreta como probabilidad, medición ni garantía de precisión.
+- La comparación meteorológica se limita al punto seleccionado, usa una caché local en memoria de 30 minutos y cancela las consultas anteriores si se elige otra ubicación. No se agregan tres solicitudes por cada celda de la malla global.
+- La capa NASA GIBS reutiliza la fuente raster del mapa cuando cambia fecha o sensor. El estado final informa si se detectaron errores de teselas; la falta de una tesela puede ser un hueco de cobertura o una fecha sin composición disponible, no necesariamente un fallo del globo.
+- El visor orbital deja de reconstruir las descripciones emergentes en cada actualización de posición. Las trayectorias usan 48 puntos y se recalculan cada 2 minutos; la propagación de posiciones continúa cada 5 segundos y se pausa cuando la pestaña del navegador queda oculta.
+
 ## NEXUS 6.4.1: reparación de la superficie orbital
 
 - El modo Orbital usa ahora la textura Natural Earth II incluida con CesiumJS como capa terrestre base. La documentación oficial de Cesium describe estos recursos integrados y muestra cómo servirlos mediante `buildModuleUrl`.
@@ -81,7 +90,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 ### Orbital Intelligence 3D
 - El modo Orbital usa un visor CesiumJS independiente para renderizar una esfera terrestre 3D con marcadores y arcos orbitales a distintas alturas.
 - Los elementos orbitales OMM se consultan desde el grupo Weather de CelesTrak. La aplicación filtra una lista explícita de misiones civiles meteorológicas y de observación de la Tierra; no procesa ni representa satélites militares o estratégicos.
-- Satellite.js propaga los elementos OMM con SGP4. Las posiciones calculadas se actualizan en la escena cada cinco segundos y los arcos orbitales se recalculan cada minuto; el catálogo orbital se guarda localmente y se vuelve a consultar como máximo cada dos horas. El usuario puede ocultar por separado los arcos y los rótulos.
+- Satellite.js propaga los elementos OMM con SGP4. Las posiciones calculadas se actualizan en la escena cada cinco segundos y los arcos orbitales se recalculan cada dos minutos con 48 puntos; el catálogo orbital se guarda localmente y se vuelve a consultar como máximo cada dos horas. El usuario puede ocultar por separado los arcos y los rótulos.
 - La lista permite enfocar el globo en una misión y seleccionar su marcador para ver nombre, altitud estimada, inclinación, período y época OMM. El almacenamiento local conserva solo los registros que pasan la lista de misiones civiles permitidas.
 - Esta selección no equivale a todos los satélites que existen. El catálogo público puede contener huecos, objetos retirados, elementos antiguos o clasificaciones incompletas. Los resultados son posiciones matemáticamente calculadas, no telemetría GPS ni una fuente de navegación operacional.
 - CelesTrak documenta OMM como formato compatible con números de catálogo ampliados; Satellite.js admite JSON OMM y propagación SGP4. NEXUS no usa TLE antiguo de cinco dígitos para estos objetos.
