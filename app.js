@@ -40,6 +40,10 @@
   let radarFetchedAt = 0;
   let radarLoading = false;
   let radarPlayback = null;
+  let satellitePlaybackHandle = null;
+  let satelliteFrameIndex = 12;
+  let activeSatelliteLayer = "modisTerra";
+  let satelliteOpacity = 0.9;
   let weatherRequestController = null;
   let weatherGridFetchedAt = 0;
   let weatherGridLoading = false;
@@ -51,6 +55,34 @@
 
   const RADAR_METADATA_URL = "https://api.rainviewer.com/public/weather-maps.json";
   const RADAR_REFRESH_MIN_MS = 5 * 60 * 1000;
+  const SATELLITE_FRAME_DAYS = 14;
+  const NASA_GIBS_ROOT = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
+  const SATELLITE_IMAGERY_LAYERS = {
+    modisTerra: {
+      label: "MODIS Terra · color natural",
+      layer: "MODIS_Terra_CorrectedReflectance_TrueColor",
+      coverage: "Cobertura global por pasadas diarias",
+      detail: "Reflectancia corregida en color natural. Puede haber huecos por nubes, noche o ausencia de pasada."
+    },
+    modisAqua: {
+      label: "MODIS Aqua · color natural",
+      layer: "MODIS_Aqua_CorrectedReflectance_TrueColor",
+      coverage: "Cobertura global por pasadas diarias",
+      detail: "Reflectancia corregida en color natural. Puede haber huecos por nubes, noche o ausencia de pasada."
+    },
+    goesEast: {
+      label: "GOES-East · GeoColor",
+      layer: "GOES-East_ABI_GeoColor",
+      coverage: "Cobertura regional · América y Atlántico",
+      detail: "GeoColor combina color natural durante el día y canales infrarrojos durante la noche; no cubre todo el planeta."
+    },
+    goesWest: {
+      label: "GOES-West · GeoColor",
+      layer: "GOES-West_ABI_GeoColor",
+      coverage: "Cobertura regional · Pacífico y oeste de América",
+      detail: "GeoColor combina color natural durante el día y canales infrarrojos durante la noche; no cubre todo el planeta."
+    }
+  };
   const WEATHER_CURRENT_FIELDS = [
     "temperature_2m", "apparent_temperature", "relative_humidity_2m",
     "cloud_cover", "precipitation", "rain", "showers", "snowfall",
@@ -1226,12 +1258,98 @@
     }
   }
 
+  function satelliteFrameDate(index) {
+    const date = new Date();
+    date.setUTCHours(0, 0, 0, 0);
+    date.setUTCDate(date.getUTCDate() - (SATELLITE_FRAME_DAYS - 1 - index));
+    return date.toISOString().slice(0, 10);
+  }
+
+  function formatSatelliteDate(value) {
+    const date = new Date(String(value) + "T00:00:00Z");
+    if (Number.isNaN(date.getTime())) return "Fecha no disponible";
+    return date.toLocaleDateString("es-AR", {
+      timeZone: "UTC", day: "2-digit", month: "short", year: "numeric"
+    });
+  }
+
+  function pauseSatellitePlayback() {
+    if (satellitePlaybackHandle) {
+      window.clearInterval(satellitePlaybackHandle);
+      satellitePlaybackHandle = null;
+    }
+    const button = $("satellitePlayBtn");
+    if (button) safeText(button, "▶ REPRODUCIR DÍAS");
+  }
+
+  function setSatelliteFrame(index, redraw) {
+    const last = SATELLITE_FRAME_DAYS - 1;
+    satelliteFrameIndex = Math.max(0, Math.min(last, Math.round(Number(index) || 0)));
+    const date = satelliteFrameDate(satelliteFrameIndex);
+    const slider = $("satelliteFrameSlider");
+    const input = $("satelliteDateInput");
+    if (slider) {
+      slider.max = String(last);
+      slider.value = String(satelliteFrameIndex);
+      slider.disabled = false;
+    }
+    if (input) {
+      input.min = satelliteFrameDate(0);
+      input.max = satelliteFrameDate(last);
+      input.value = date;
+    }
+    safeText($("satelliteDateLabel"), formatSatelliteDate(date) + " UTC · " +
+      (satelliteFrameIndex + 1) + "/" + SATELLITE_FRAME_DAYS);
+    if (redraw !== false && activeMapMode === "satellite") renderSatelliteImagery();
+  }
+
+  function renderSatelliteImagery() {
+    if (!mapReady || !map) return;
+    const descriptor = SATELLITE_IMAGERY_LAYERS[activeSatelliteLayer] || SATELLITE_IMAGERY_LAYERS.modisTerra;
+    const date = satelliteFrameDate(satelliteFrameIndex);
+    const sourceId = "nexus-satellite-imagery";
+    const layerId = "nexus-satellite-imagery-layer";
+    const tileUrl = NASA_GIBS_ROOT + descriptor.layer + "/default/" + date +
+      "/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg";
+
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    map.addSource(sourceId, {
+      type: "raster",
+      tiles: [tileUrl],
+      tileSize: 256,
+      minzoom: 0,
+      maxzoom: 9,
+      attribution: "NASA Global Imagery Browse Services (GIBS) · NASA EOSDIS"
+    });
+    const firstSymbolLayer = (map.getStyle().layers.find((layer) => layer.type === "symbol") || {}).id;
+    const imageryLayer = {
+      id: layerId,
+      type: "raster",
+      source: sourceId,
+      layout: { visibility: activeMapMode === "satellite" ? "visible" : "none" },
+      paint: {
+        "raster-opacity": satelliteOpacity,
+        "raster-fade-duration": 220
+      }
+    };
+    if (firstSymbolLayer) map.addLayer(imageryLayer, firstSymbolLayer);
+    else map.addLayer(imageryLayer);
+
+    safeText($("satelliteLayerDescription"), descriptor.detail);
+    safeText($("satelliteImageryStatus"), descriptor.label + " · " + descriptor.coverage +
+      " · " + date + " UTC · solicitando teselas a NASA GIBS…");
+    safeText($("mapStatus"), "Imágenes satelitales NASA GIBS · " + descriptor.label + " · " + date + " UTC");
+    map.triggerRepaint();
+  }
+
   function setMapMode(mode) {
-    if (!["cyber", "weather", "orbital"].includes(mode)) return;
+    if (!["cyber", "weather", "satellite", "orbital"].includes(mode)) return;
     activeMapMode = mode;
     const modes = [
       ["cyberModeBtn", "cyber"],
       ["weatherModeBtn", "weather"],
+      ["satelliteModeBtn", "satellite"],
       ["orbitalModeBtn", "orbital"]
     ];
     modes.forEach(([id, value]) => {
@@ -1243,9 +1361,11 @@
     });
 
     const weatherActive = mode === "weather";
+    const satelliteActive = mode === "satellite";
     const cyberActive = mode === "cyber";
     const orbitalActive = mode === "orbital";
     $("weatherControls").hidden = !weatherActive;
+    $("satelliteControls").hidden = !satelliteActive;
     $("orbitalControls").hidden = !orbitalActive;
     $("map").hidden = orbitalActive;
     $("orbitalScene").hidden = !orbitalActive;
@@ -1282,11 +1402,16 @@
         if (map.getLayer("nexus-weather-selection-layer")) {
           map.setLayoutProperty("nexus-weather-selection-layer", "visibility", weatherActive ? "visible" : "none");
         }
+        if (map.getLayer("nexus-satellite-imagery-layer")) {
+          map.setLayoutProperty("nexus-satellite-imagery-layer", "visibility", satelliteActive ? "visible" : "none");
+        }
+        if (satelliteActive) renderSatelliteImagery();
         map.triggerRepaint();
       });
     }
 
     if (!weatherActive) { pauseRadarPlayback(); pauseWeatherForecast(); }
+    if (!satelliteActive) pauseSatellitePlayback();
     if (orbitalActive) startOrbitalUpdates();
     else pauseOrbitalUpdates();
     const heading = $("mapHeading");
@@ -1314,6 +1439,15 @@
         loadWeatherGrid();
         loadRadarFrames();
         safeText($("mapStatus"), "Cargando la malla atmosférica mundial…");
+      }
+    } else if (mode === "satellite") {
+      safeText(heading, "EARTH IMAGERY · observación satelital");
+      safeText(annotation, "Mosaicos de imágenes satelitales publicados por NASA GIBS · cobertura y fecha dependen del sensor");
+      safeText(footLeft, "NASA EOSDIS · GIBS · MODIS / GOES ABI GEOCOLOR");
+      safeText(footRight, "IMÁGENES CON FECHA · NO VIDEO EN DIRECTO");
+      if (mapReady) {
+        setSatelliteFrame(satelliteFrameIndex, false);
+        renderSatelliteImagery();
       }
     } else {
       safeText(heading, "ORBITAL INTELLIGENCE · satélites civiles");
@@ -1535,6 +1669,10 @@
           safeText($("orbitalStatus"), "Escena orbital 3D · satélites civiles meteorológicos");
           return;
         }
+        if (activeMapMode === "satellite") {
+          safeText($("mapStatus"), "NASA GIBS · imágenes satelitales con fecha · cobertura variable según el sensor");
+          return;
+        }
         const zoom = map.getZoom();
         if (zoom > 5.2) {
           safeText($("mapStatus"), "Zoom local · marcadores nacionales ocultos para evitar falsas ubicaciones");
@@ -1559,16 +1697,65 @@
       lookupWeatherAt(event.lngLat);
     });
 
+    map.on("sourcedata", (event) => {
+      if (event && event.sourceId === "nexus-satellite-imagery" && event.isSourceLoaded) {
+        const descriptor = SATELLITE_IMAGERY_LAYERS[activeSatelliteLayer] || SATELLITE_IMAGERY_LAYERS.modisTerra;
+        safeText($("satelliteImageryStatus"), descriptor.label + " · " + descriptor.coverage +
+          " · imagen con fecha " + satelliteFrameDate(satelliteFrameIndex) +
+          " · los huecos pueden indicar falta de pasada, noche o cobertura regional.");
+      }
+    });
     map.on("error", (event) => {
-      if (event && event.error) {
+      if (event && event.sourceId === "nexus-satellite-imagery") {
+        safeText($("satelliteImageryStatus"),
+          "NASA GIBS no entregó esta tesela o fecha. Probá otra fecha o una capa con distinta cobertura.");
+      } else if (event && event.error) {
         safeText($("mapStatus"), "Mapa parcialmente disponible · revisá la conexión");
       }
     });
 
     $("cyberModeBtn").addEventListener("click", () => setMapMode("cyber"));
     $("weatherModeBtn").addEventListener("click", () => setMapMode("weather"));
+    $("satelliteModeBtn").addEventListener("click", () => setMapMode("satellite"));
     $("orbitalModeBtn").addEventListener("click", () => setMapMode("orbital"));
     $("weatherVariableSelect").addEventListener("change", () => applyWeatherVariable($("weatherVariableSelect").value));
+    $("satelliteLayerSelect").addEventListener("change", () => {
+      activeSatelliteLayer = SATELLITE_IMAGERY_LAYERS[$("satelliteLayerSelect").value]
+        ? $("satelliteLayerSelect").value : "modisTerra";
+      safeText($("satelliteLayerDescription"), SATELLITE_IMAGERY_LAYERS[activeSatelliteLayer].detail);
+      if (activeMapMode === "satellite") renderSatelliteImagery();
+    });
+    $("satelliteFrameSlider").addEventListener("input", () => {
+      pauseSatellitePlayback();
+      setSatelliteFrame(Number($("satelliteFrameSlider").value));
+    });
+    $("satelliteDateInput").addEventListener("change", () => {
+      pauseSatellitePlayback();
+      const min = new Date(satelliteFrameDate(0) + "T00:00:00Z").getTime();
+      const selected = new Date($("satelliteDateInput").value + "T00:00:00Z").getTime();
+      if (!Number.isFinite(selected)) return;
+      setSatelliteFrame(Math.round((selected - min) / 86400000));
+    });
+    $("satelliteOpacitySlider").addEventListener("input", () => {
+      satelliteOpacity = Math.max(0, Math.min(100, Number($("satelliteOpacitySlider").value))) / 100;
+      safeText($("satelliteOpacityValue"), Math.round(satelliteOpacity * 100) + "%");
+      if (map && map.getLayer("nexus-satellite-imagery-layer")) {
+        map.setPaintProperty("nexus-satellite-imagery-layer", "raster-opacity", satelliteOpacity);
+      }
+    });
+    $("satellitePlayBtn").addEventListener("click", () => {
+      if (satellitePlaybackHandle) { pauseSatellitePlayback(); return; }
+      if (satelliteFrameIndex >= SATELLITE_FRAME_DAYS - 1) setSatelliteFrame(0);
+      safeText($("satellitePlayBtn"), "Ⅱ PAUSAR SECUENCIA");
+      satellitePlaybackHandle = window.setInterval(() => {
+        const next = satelliteFrameIndex + 1;
+        if (next >= SATELLITE_FRAME_DAYS) { pauseSatellitePlayback(); return; }
+        setSatelliteFrame(next);
+      }, 1500);
+    });
+    $("loadSatelliteImageryBtn").addEventListener("click", () => {
+      if (activeMapMode === "satellite") renderSatelliteImagery();
+    });
     $("weatherTimeSlider").addEventListener("input", () => {
       pauseWeatherForecast();
       applyWeatherForecastFrame(Number($("weatherTimeSlider").value));
