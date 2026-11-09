@@ -44,6 +44,10 @@
   let weatherGridFetchedAt = 0;
   let weatherGridLoading = false;
   let weatherGridRecords = [];
+  let weatherForecastTimes = [];
+  let weatherTimeIndex = 0;
+  let weatherPlaybackHandle = null;
+  let orbitalTrailRefreshAt = 0;
 
   const RADAR_METADATA_URL = "https://api.rainviewer.com/public/weather-maps.json";
   const RADAR_REFRESH_MIN_MS = 5 * 60 * 1000;
@@ -59,16 +63,32 @@
       WEATHER_GRID_COORDS.push({ latitude, longitude });
     }
   }
+  const WEATHER_HOURLY_FIELDS = [
+    "temperature_2m", "apparent_temperature", "dew_point_2m", "relative_humidity_2m",
+    "precipitation", "rain", "showers", "snowfall", "weather_code", "cloud_cover",
+    "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high", "pressure_msl",
+    "surface_pressure", "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
+    "uv_index", "shortwave_radiation", "visibility", "cape", "soil_moisture_0_to_7cm",
+    "is_day"
+  ].join(",");
   const WEATHER_GRID_REFRESH_MS = 60 * 60 * 1000;
-  const WEATHER_CACHE_KEY = "nexus-weather-grid-v2";
+  const WEATHER_CACHE_KEY = "nexus-weather-grid-v3";
   const ORBITAL_CACHE_KEY = "nexus-civil-weather-omm-v2";
   const WEATHER_VISUALS = {
     temperature: { label: "TEMPERATURA", property: "temperature", stops: [-35, "#3859a8", -10, "#398bc5", 5, "#54b9a9", 20, "#d6c85e", 35, "#e87950", 48, "#a93d65"] },
     precipitation: { label: "PRECIPITACIÓN", property: "precipitation", stops: [0, "#233c65", 0.2, "#397dbc", 1, "#39b9bd", 3, "#62c978", 8, "#e4ca53", 20, "#e97d42", 50, "#bd3c62"] },
     wind: { label: "VIENTO", property: "windSpeed", stops: [0, "#275b96", 10, "#36a3bd", 25, "#54c982", 45, "#e1c34e", 70, "#e98046", 100, "#b64464"] },
     humidity: { label: "HUMEDAD", property: "humidity", stops: [0, "#c17b4b", 20, "#d1b95d", 40, "#7dbd83", 60, "#3eafad", 80, "#367fbe", 100, "#4d58a5"] },
-    clouds: { label: "NUBOSIDAD", property: "cloudCover", stops: [0, "#14283b", 20, "#3c637e", 40, "#6d94a8", 60, "#a7bac5", 80, "#d0d6d8", 100, "#ffffff"] },
-    pressure: { label: "PRESIÓN", property: "pressure", stops: [940, "#7450a1", 970, "#447ac2", 990, "#3cb5b2", 1010, "#72bd77", 1030, "#d8bd4f", 1055, "#d66e48"] }
+    clouds: { label: "NUBOSIDAD TOTAL", property: "cloudCover", stops: [0, "#14283b", 20, "#3c637e", 40, "#6d94a8", 60, "#a7bac5", 80, "#d0d6d8", 100, "#ffffff"] },
+    cloudLow: { label: "NUBES BAJAS", property: "cloudLow", stops: [0, "#172d42", 20, "#426c89", 40, "#6a9bb0", 60, "#91b8c5", 80, "#c6dce0", 100, "#ffffff"] },
+    cloudMid: { label: "NUBES MEDIAS", property: "cloudMid", stops: [0, "#182841", 20, "#4e5d8e", 40, "#6a80b2", 60, "#8ea4cc", 80, "#c0cce0", 100, "#ffffff"] },
+    cloudHigh: { label: "NUBES ALTAS", property: "cloudHigh", stops: [0, "#1b2940", 20, "#596889", 40, "#8292b1", 60, "#abb9cd", 80, "#d2dce7", 100, "#ffffff"] },
+    pressure: { label: "PRESIÓN", property: "pressure", stops: [940, "#7450a1", 970, "#447ac2", 990, "#3cb5b2", 1010, "#72bd77", 1030, "#d8bd4f", 1055, "#d66e48"] },
+    uv: { label: "ÍNDICE UV", property: "uvIndex", stops: [0, "#358c69", 2, "#75b85e", 5, "#e3d45b", 7, "#e99b4f", 10, "#ce5262", 14, "#8c4baf"] },
+    radiation: { label: "RADIACIÓN SOLAR", property: "radiation", stops: [0, "#223b63", 100, "#397eb7", 300, "#4bbd9c", 500, "#e5cb57", 800, "#e88d48", 1100, "#bd4b53"] },
+    visibility: { label: "VISIBILIDAD", property: "visibility", stops: [0, "#b34c63", 1000, "#d98058", 5000, "#e2bd61", 10000, "#74bd9b", 20000, "#3686ba", 40000, "#495da8"] },
+    cape: { label: "ENERGÍA CONVECTIVA · CAPE", property: "cape", stops: [0, "#25416a", 250, "#397eb7", 750, "#44b99b", 1500, "#e5ca55", 2500, "#e77a4b", 4000, "#a9426c"] },
+    soilMoisture: { label: "HUMEDAD DEL SUELO", property: "soilMoisture", stops: [0, "#c17b4b", 0.05, "#d2b65b", 0.12, "#89bd78", 0.22, "#3cae9c", 0.35, "#386eb1", 0.5, "#3a4c83"] }
   };
   const ORBITAL_GROUP_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP=WEATHER&FORMAT=JSON";
   const ORBITAL_REFRESH_MS = 2 * 60 * 60 * 1000;
