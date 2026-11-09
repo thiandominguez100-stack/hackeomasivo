@@ -51,7 +51,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El globo contiene una malla de hasta **288 celdas** de 15° de latitud/longitud, con muestras distribuidas por todo el planeta.
 - La interfaz permite colorear la superficie por temperatura, precipitación, viento, humedad, nubosidad o presión.
 - Cada celda conserva hasta 15 variables actuales admitidas por Open-Meteo: temperatura, sensación térmica, humedad relativa, nubosidad, precipitación, lluvia, chubascos, nieve, presión a nivel del mar, presión de superficie, velocidad/dirección del viento, ráfagas, código meteorológico y día/noche.
-- El navegador consulta Open-Meteo en una petición de múltiples ubicaciones; los datos se refrescan automáticamente cada 30 minutos y también se pueden solicitar manualmente.
+- El navegador consulta Open-Meteo en una petición de múltiples ubicaciones; conserva la última respuesta en el almacenamiento local y vuelve a consultar como máximo cada 60 minutos. El botón de actualización respeta ese intervalo para no exceder los límites de la fuente.
 - Las celdas son estimaciones de modelo en una resolución visual de referencia de 15°, no observaciones de estaciones ni una simulación de alta resolución. Si una celda no tiene un dato válido, NEXUS no inventa su valor.
 - RainViewer se conserva como capa opcional de radar de precipitación histórica, solo en las regiones con cobertura de radar disponible y con hasta dos horas de historial. No es una capa de pronóstico ni una imagen meteorológica uniforme del planeta.
 - Al seleccionar un punto se muestran las variables meteorológicas devueltas por el modelo y su hora de referencia.
@@ -59,7 +59,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 ### Orbital Intelligence 3D
 - El modo Orbital usa un visor CesiumJS independiente para renderizar una esfera terrestre 3D con marcadores y arcos orbitales a distintas alturas.
 - Los elementos orbitales OMM se consultan desde el grupo Weather de CelesTrak. La aplicación filtra una lista explícita de misiones civiles meteorológicas y de observación de la Tierra; no procesa ni representa satélites militares o estratégicos.
-- Satellite.js propaga los elementos OMM con SGP4. Las posiciones calculadas se actualizan en la escena cada cinco segundos; el catálogo orbital se vuelve a consultar como máximo cada dos horas.
+- Satellite.js propaga los elementos OMM con SGP4. Las posiciones calculadas se actualizan en la escena cada cinco segundos; el catálogo orbital se guarda localmente y se vuelve a consultar como máximo cada dos horas; los accesos intermedios reutilizan esa última respuesta.
 - La lista permite enfocar el globo en una misión y seleccionar su marcador para ver nombre, altitud estimada, inclinación, período y época OMM.
 - Esta selección no equivale a todos los satélites que existen. El catálogo público puede contener huecos, objetos retirados, elementos antiguos o clasificaciones incompletas. Los resultados son posiciones matemáticamente calculadas, no telemetría GPS ni una fuente de navegación operacional.
 - CelesTrak documenta OMM como formato compatible con números de catálogo ampliados; Satellite.js admite JSON OMM y propagación SGP4. NEXUS no usa TLE antiguo de cinco dígitos para estos objetos.
