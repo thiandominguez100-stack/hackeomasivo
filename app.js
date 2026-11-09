@@ -1091,14 +1091,24 @@
       const payload = await response.json();
       const rows = Array.isArray(payload) ? payload : [payload];
       if (!rows.length) throw new Error("El catálogo no devolvió registros OMM.");
+      const now = Date.now();
+      const safeRows = rows.filter((omm) => {
+        const name = String(omm && omm.OBJECT_NAME || "").trim();
+        const epoch = new Date(String(omm && omm.EPOCH || ""));
+        return CIVIL_WEATHER_MISSION.test(name) &&
+          String(omm && omm.CLASSIFICATION_TYPE || "U").toUpperCase() === "U" &&
+          Number.isFinite(epoch.getTime()) &&
+          Math.abs(now - epoch.getTime()) <= 14 * 24 * 60 * 60 * 1000;
+      });
+      if (!safeRows.length) throw new Error("El catálogo no devolvió misiones civiles elegibles con elementos recientes.");
 
-      drawOrbitalCatalog(rows, satellite);
+      drawOrbitalCatalog(safeRows, satellite);
       orbitalFetchedAt = Date.now();
       safeText($("orbitalUpdated"), dateLabel(new Date(orbitalFetchedAt).toISOString()));
       try {
         localStorage.setItem(ORBITAL_CACHE_KEY, JSON.stringify({
           fetchedAt: orbitalFetchedAt,
-          rows
+          rows: safeRows
         }));
       } catch (error) {
         console.warn("NEXUS orbital cache write:", error);
