@@ -237,3 +237,17 @@ footer a{color:#7cabb9}
 .weather-legend b{font:inherit;color:#d7f5fa}
 @media(max-width:900px){.orbital-scene{height:440px}.orbital-object-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.orbital-scene{height:365px}.orbital-control-head{align-items:flex-start;flex-direction:column}.orbital-stats{grid-template-columns:1fr 1fr}.orbital-object-list{grid-template-columns:1fr 1fr}.weather-variable-select{flex:1;min-width:0}.weather-button-row{display:flex;flex-wrap:wrap}.weather-select-label{width:auto}}
+
+
+/* NEXUS 6.3 — forecast timeline and orbital display controls */
+.weather-forecast-player{display:grid;grid-template-columns:auto minmax(120px,1fr) minmax(135px,auto);align-items:center;gap:10px;padding:9px 10px;border:1px solid #274c60;border-radius:8px;background:linear-gradient(90deg,#0a1b2a,#0c2432)}
+.weather-forecast-player input[type="range"]{width:100%;accent-color:#5bd2d8;cursor:pointer}
+.weather-forecast-player input[type="range"]:disabled{opacity:.45;cursor:wait}
+.weather-forecast-player .small-action{white-space:nowrap}
+.weather-forecast-player .radar-frame-time{font-size:8px;white-space:nowrap;color:#c7e4e9}
+.orbital-visibility-toggles{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.orbital-visibility-toggles label{display:flex;align-items:center;gap:5px;color:#a9c3d2;font:8px 'DM Mono';letter-spacing:.04em}
+.orbital-visibility-toggles input{accent-color:#6ddce7}
+.weather-variable-select{min-width:158px}
+@media(max-width:720px){.weather-forecast-player{grid-template-columns:1fr 1fr}.weather-forecast-player input[type="range"]{grid-column:1 / -1;grid-row:2}.weather-forecast-player .radar-frame-time{justify-self:end}.orbital-visibility-toggles{gap:7px}}
+@media(max-width:420px){.weather-forecast-player{grid-template-columns:1fr}.weather-forecast-player input[type="range"]{grid-column:auto;grid-row:auto}.weather-forecast-player .radar-frame-time{justify-self:start}.weather-variable-select{min-width:100%}}
