@@ -172,5 +172,5 @@ test("NEXUS 6.0 exposes three modes and clearly labels the weather data limits",
   assert.match(css, /map-mode-tabs/);
   assert.match(css, /weather-controls/);
   assert.match(readme, /dos horas de historial/);
-  assert.match(readme, /no dibuja posiciones orbitales exactas/);
+  assert.match(readme, /No dibuja posiciones orbitales exactas/);
 });
