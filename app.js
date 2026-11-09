@@ -463,7 +463,7 @@
       button.disabled = true;
       safeText(button, "CARGANDO MODELO…");
     }
-    safeText($("weatherGridStatus"), "Descargando el modelo global · 288 ubicaciones · 11 variables…");
+    safeText($("weatherGridStatus"), "Descargando el modelo global · 288 ubicaciones · 12 variables…");
 
     try {
       const query = new URLSearchParams({
@@ -556,7 +556,7 @@
       safeText($("weatherGridStatus"), cellFeatures.length + " celdas de modelo cubriendo la esfera · " +
         (records[0].time ? dateLabel(records[0].time + "Z") : "hora no disponible") +
         " · actualización automática cada 30 min");
-      safeText($("mapStatus"), "Modelo mundial cargado · " + cellFeatures.length + " celdas · 11 variables disponibles");
+      safeText($("mapStatus"), "Modelo mundial cargado · " + cellFeatures.length + " celdas · 12 variables disponibles");
       applyWeatherVariable(activeWeatherVariable);
       map.triggerRepaint();
     } catch (error) {
