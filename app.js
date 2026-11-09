@@ -450,6 +450,26 @@
     };
   }
 
+  const WEATHER_HOURLY_PROPERTY_MAP = {
+    temperature: "temperature_2m", feelsLike: "apparent_temperature", dewPoint: "dew_point_2m",
+    humidity: "relative_humidity_2m", cloudCover: "cloud_cover", cloudLow: "cloud_cover_low",
+    cloudMid: "cloud_cover_mid", cloudHigh: "cloud_cover_high", precipitation: "precipitation",
+    rain: "rain", showers: "showers", snowfall: "snowfall", pressure: "pressure_msl",
+    surfacePressure: "surface_pressure", windSpeed: "wind_speed_10m", windDirection: "wind_direction_10m",
+    windGusts: "wind_gusts_10m", uvIndex: "uv_index", radiation: "shortwave_radiation",
+    visibility: "visibility", cape: "cape", soilMoisture: "soil_moisture_0_to_7cm",
+    weatherCode: "weather_code", isDay: "is_day"
+  };
+
+  function formatWeatherTime(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value || "Hora no disponible");
+    return date.toLocaleString("es-AR", {
+      timeZone: "UTC", weekday: "short", day: "2-digit", month: "short",
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }) + " UTC";
+  }
+
   function applyWeatherVariable(key) {
     const visual = WEATHER_VISUALS[key] || WEATHER_VISUALS.temperature;
     activeWeatherVariable = WEATHER_VISUALS[key] ? key : "temperature";
