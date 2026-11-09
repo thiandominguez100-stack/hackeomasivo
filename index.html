@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111b">
   <meta name="description" content="NEXUS: observatorio global de ciberseguridad, meteorología y contexto orbital mediante fuentes públicas.">
-  <title>NEXUS 6.4.1 — Global Earth Intelligence</title>
+  <title>NEXUS 6.5 — Global Earth Intelligence</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/favicon.svg">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=21">
+  <link rel="stylesheet" href="./styles.css?v=22">
 </head>
 <body>
 <div class="shell">
   <header>
-    <a class="brand" href="./?release=6.4.1" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
+    <a class="brand" href="./?release=6.5" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
     <div class="header-right">
       <div class="status-pill" id="overallStatus"><i></i><span>Conectando fuentes</span></div>
       <span class="utc-clock" id="clock">--:--:-- UTC</span>
@@ -24,7 +24,7 @@
 
   <section class="hero">
     <div>
-      <label class="eyebrow">CYBER · WEATHER · SATELLITE · ORBITAL · BUILD 6.4.1</label>
+      <label class="eyebrow">CYBER · WEATHER · SATELLITE · ORBITAL · BUILD 6.5</label>
       <h1>Global <em>Earth Intelligence</em> Observatory</h1>
       <p>Observación defensiva, meteorología mundial y contexto espacial con fuentes públicas verificables.</p>
     </div>
@@ -137,7 +137,16 @@
             <span>NUBOSIDAD<b id="wxCloud">—</b></span>
             <span>PRECIPITACIÓN<b id="wxRain">—</b></span>
           </div>
-          <p id="weatherPointUpdated" class="method-note">Open‑Meteo · condiciones actuales estimadas por modelo · elegí una ubicación</p>
+          <p id="weatherPointUpdated" class="method-note">Open‑Meteo best_match · condiciones estimadas por modelo · elegí una ubicación</p>
+          <div class="weather-model-comparison-card">
+            <div class="weather-model-comparison-head">
+              <div><label>MODEL SPREAD · PRÓXIMAS 24 H</label><h4>Comparación independiente de modelos</h4></div>
+              <p id="weatherModelComparisonStatus" class="method-note">Seleccioná un punto para comparar ECMWF, NOAA y GEM.</p>
+            </div>
+            <div id="weatherModelComparison" class="weather-model-comparison" aria-live="polite">
+              <p class="empty-state">La comparación se consulta únicamente para el punto seleccionado.</p>
+            </div>
+          </div>
         </div>
         <p class="weather-disclaimer">El radar muestra únicamente zonas con cobertura disponible y hasta 2 horas de historial; no es un pronóstico. La consulta puntual usa datos de modelo y puede tener retraso. <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">Radar: RainViewer</a> · <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Modelo: Open‑Meteo</a>.</p>
       </div>
@@ -304,13 +313,13 @@
   </section>
 
   <footer>
-    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.4.1</span>
+    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.5</span>
     <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · <a href="https://earthdata.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA EOSDIS</a></span>
   </footer>
 </div>
 <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
 <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.144.0/Build/Cesium/";</script>
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.144.0/Build/Cesium/Cesium.js"></script>
-<script src="./app.js?v=23"></script>
+<script src="./app.js?v=24"></script>
 </body>
 </html>
