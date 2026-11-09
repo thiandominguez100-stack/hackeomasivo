@@ -1,4 +1,4 @@
-const CACHE = "nexus-shell-v16";
+const CACHE = "nexus-shell-v17";
 const FILES = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest"];
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)).then(() => self.skipWaiting()));
