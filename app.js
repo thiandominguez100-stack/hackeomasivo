@@ -59,7 +59,9 @@
       WEATHER_GRID_COORDS.push({ latitude, longitude });
     }
   }
-  const WEATHER_GRID_REFRESH_MS = 30 * 60 * 1000;
+  const WEATHER_GRID_REFRESH_MS = 60 * 60 * 1000;
+  const WEATHER_CACHE_KEY = "nexus-weather-grid-v2";
+  const ORBITAL_CACHE_KEY = "nexus-civil-weather-omm-v2";
   const WEATHER_VISUALS = {
     temperature: { label: "TEMPERATURA", property: "temperature", stops: [-35, "#3859a8", -10, "#398bc5", 5, "#54b9a9", 20, "#d6c85e", 35, "#e87950", 48, "#a93d65"] },
     precipitation: { label: "PRECIPITACIÓN", property: "precipitation", stops: [0, "#233c65", 0.2, "#397dbc", 1, "#39b9bd", 3, "#62c978", 8, "#e4ca53", 20, "#e97d42", 50, "#bd3c62"] },
@@ -451,11 +453,39 @@
     }
   }
 
-  async function loadWeatherGrid(force = false) {
+  async function loadWeatherGrid() {
     if (!mapReady || weatherGridLoading) return;
-    if (!force && weatherGridRecords.length &&
+
+    const pointSource = map.getSource("nexus-weather-grid");
+    const cellSource = map.getSource("nexus-weather-cells");
+    if (!pointSource || !cellSource) return;
+
+    let cached = null;
+    if (!weatherGridRecords.length) {
+      try {
+        cached = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || "null");
+      } catch (error) {
+        console.warn("NEXUS weather cache read:", error);
+      }
+      if (cached && Array.isArray(cached.records) &&
+          cached.points && cached.points.type === "FeatureCollection" &&
+          cached.cells && cached.cells.type === "FeatureCollection" &&
+          Number.isFinite(Number(cached.fetchedAt))) {
+        pointSource.setData(cached.points);
+        cellSource.setData(cached.cells);
+        weatherGridRecords = cached.records;
+        weatherGridFetchedAt = Number(cached.fetchedAt);
+        safeText($("weatherCoverageCount"), cached.cells.features.length + " CELDAS EN CACHÉ");
+        safeText($("weatherGridStatus"), cached.cells.features.length + " celdas restauradas · datos de " +
+          ageLabel(new Date(weatherGridFetchedAt).toISOString()) + " · comprobando actualización del modelo");
+        applyWeatherVariable(activeWeatherVariable);
+      }
+    }
+
+    if (weatherGridRecords.length &&
         Date.now() - weatherGridFetchedAt < WEATHER_GRID_REFRESH_MS) {
       applyWeatherVariable(activeWeatherVariable);
+      safeText($("mapStatus"), "Modelo mundial en caché · " + weatherGridRecords.length + " muestras · datos guardados localmente");
       return;
     }
 
@@ -463,9 +493,11 @@
     const button = $("loadWeatherGridBtn");
     if (button) {
       button.disabled = true;
-      safeText(button, "CARGANDO MODELO…");
+      safeText(button, "CONSULTANDO MODELO…");
     }
-    safeText($("weatherGridStatus"), "Descargando el modelo global · 288 ubicaciones · 15 variables…");
+    safeText($("weatherGridStatus"), weatherGridRecords.length
+      ? "Actualizando datos meteorológicos; la última malla válida permanece visible…"
+      : "Descargando el modelo global · 288 ubicaciones · 15 variables…");
 
     try {
       const query = new URLSearchParams({
@@ -556,25 +588,35 @@
       if (cellFeatures.length < 200) {
         throw new Error("El modelo global entregó solo " + cellFeatures.length + " celdas válidas; no se reemplazó la última capa buena.");
       }
-      const pointSource = map.getSource("nexus-weather-grid");
-      const cellSource = map.getSource("nexus-weather-cells");
-      if (!pointSource || !cellSource) throw new Error("Las capas meteorológicas todavía no están preparadas.");
-      pointSource.setData({ type: "FeatureCollection", features: pointFeatures });
-      cellSource.setData({ type: "FeatureCollection", features: cellFeatures });
+      const points = { type: "FeatureCollection", features: pointFeatures };
+      const cells = { type: "FeatureCollection", features: cellFeatures };
+      pointSource.setData(points);
+      cellSource.setData(cells);
       weatherGridRecords = records;
       weatherGridFetchedAt = Date.now();
+
+      try {
+        localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({
+          fetchedAt: weatherGridFetchedAt, records, points, cells
+        }));
+      } catch (error) {
+        console.warn("NEXUS weather cache write:", error);
+      }
+
       safeText($("weatherCoverageCount"), cellFeatures.length + " CELDAS ACTIVAS");
       safeText($("weatherGridStatus"), cellFeatures.length + " celdas de modelo cubriendo la esfera · " +
         (records[0].time ? dateLabel(records[0].time + "Z") : "hora no disponible") +
-        " · actualización automática cada 30 min");
+        " · actualización como máximo cada 60 min");
       safeText($("mapStatus"), "Modelo mundial cargado · " + cellFeatures.length + " celdas · 15 variables disponibles");
       applyWeatherVariable(activeWeatherVariable);
       map.triggerRepaint();
     } catch (error) {
       console.warn("NEXUS global weather grid:", error);
       safeText($("weatherGridStatus"), "No se pudo actualizar el modelo global: " + (error.message || "error de red") +
-        ". Se conserva la última capa válida si existe.");
-      safeText($("mapStatus"), "Fuente meteorológica temporalmente no disponible");
+        (weatherGridRecords.length ? ". Se conserva la última malla válida guardada." : ". Probá actualizar más tarde."));
+      safeText($("mapStatus"), weatherGridRecords.length
+        ? "Modelo meteorológico guardado · actualización de fuente pendiente"
+        : "Fuente meteorológica temporalmente no disponible");
     } finally {
       weatherGridLoading = false;
       if (button) {
@@ -1394,7 +1436,7 @@
     $("weatherVariableSelect").addEventListener("change", () => applyWeatherVariable($("weatherVariableSelect").value));
     $("loadOrbitalBtn").addEventListener("click", () => loadOrbitalCatalog(true));
 
-    $("loadWeatherGridBtn").addEventListener("click", () => loadWeatherGrid(true));
+    $("loadWeatherGridBtn").addEventListener("click", () => loadWeatherGrid());
 
     $("loadRadarBtn").addEventListener("click", () => {
       if (Date.now() - radarFetchedAt < RADAR_REFRESH_MIN_MS && radarFrames.length) {
