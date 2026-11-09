@@ -127,6 +127,7 @@
   const CIVIL_WEATHER_MISSION = /^(NOAA(?:\s|$)|SUOMI NPP|METOP(?:-|\s|$)|METEOSAT|GOES(?:\s|$)|HIMAWARI|METEOR-M|ARKTIKA-M|INSAT-3D|GEO-KOMPSAT|ELEKTRO-L|SENTINEL-3|MTG-)/i;
   let activeWeatherVariable = "temperature";
   let orbitalViewer = null;
+  let orbitalDetailImageryLayer = null;
   let orbitalSatellites = [];
   let orbitalFetchedAt = 0;
   let orbitalLoading = false;
@@ -971,20 +972,47 @@
         shouldAnimate: false
       });
       orbitalViewer.imageryLayers.removeAll(true);
-      orbitalViewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
-        url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-        maximumLevel: 18,
-        credit: "© OpenStreetMap contributors"
-      }));
-      orbitalViewer.resolutionScale = 0.88;
+      orbitalViewer.scene.backgroundColor = Cesium.Color.fromCssColorString("#020916");
+      orbitalViewer.scene.globe.show = true;
+      orbitalViewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#173b53");
       orbitalViewer.scene.globe.enableLighting = true;
       orbitalViewer.scene.globe.showGroundAtmosphere = true;
+      if (orbitalViewer.scene.skyAtmosphere) orbitalViewer.scene.skyAtmosphere.show = true;
+
+      // Cesium ships a low-resolution Natural Earth II texture with the engine.
+      // It is same-origin with the pinned Cesium bundle and keeps Earth visible
+      // even when every external imagery service is unavailable.
+      const earthBaseProvider = new Cesium.UrlTemplateImageryProvider({
+        url: Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII") + "/{z}/{x}/{reverseY}.jpg",
+        tilingScheme: new Cesium.GeographicTilingScheme(),
+        maximumLevel: 5,
+        credit: "Cesium · Natural Earth II",
+        enablePickFeatures: false
+      });
+      orbitalViewer.imageryLayers.addImageryProvider(earthBaseProvider);
+
+      // OpenStreetMap adds geographic detail when reachable; it is never the only
+      // source painting the globe.
+      const detailProvider = new Cesium.UrlTemplateImageryProvider({
+        url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        maximumLevel: 18,
+        credit: "© OpenStreetMap contributors",
+        enablePickFeatures: false
+      });
+      orbitalDetailImageryLayer = orbitalViewer.imageryLayers.addImageryProvider(detailProvider);
+      detailProvider.errorEvent.addEventListener((tileError) => {
+        console.warn("NEXUS orbital detail imagery:", tileError);
+        if (orbitalDetailImageryLayer) orbitalDetailImageryLayer.show = false;
+        safeText($("orbitalSurfaceStatus"),
+          "Mapa detallado no disponible · se mantiene la textura terrestre integrada de Cesium.");
+        if (orbitalViewer) orbitalViewer.scene.requestRender();
+      });
+      safeText($("orbitalSurfaceStatus"),
+        "TEXTURA TERRESTRE INTEGRADA · cartografía de detalle opcional");
+      orbitalViewer.resolutionScale = 0.88;
       orbitalViewer.scene.screenSpaceCameraController.minimumZoomDistance = 720000;
       orbitalViewer.scene.screenSpaceCameraController.maximumZoomDistance = 65000000;
-      orbitalViewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(-35, 18, 33000000),
-        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-55), roll: 0 }
-      });
+      resetOrbitalCamera();
       window.setTimeout(() => {
         if (orbitalViewer) { orbitalViewer.forceResize(); orbitalViewer.scene.requestRender(); }
       }, 180);
@@ -995,6 +1023,23 @@
       orbitalViewer = null;
       return false;
     }
+  }
+
+  function resetOrbitalCamera() {
+    if (!orbitalViewer || !window.Cesium) return;
+    const Cesium = window.Cesium;
+    orbitalViewer.camera.cancelFlight();
+    orbitalViewer.camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(-30, 16, 19000000),
+      orientation: {
+        heading: 0,
+        pitch: Cesium.Math.toRadians(-58),
+        roll: 0
+      }
+    });
+    orbitalViewer.scene.requestRender();
+    safeText($("orbitalSurfaceStatus"),
+      "TIERRA ENCUADRADA · textura base integrada · mapa detallado opcional");
   }
 
   function satelliteGeodetic(satellite, satrec, date) {
@@ -1157,9 +1202,9 @@
     }
     orbitalTrailRefreshAt = Date.now();
     startOrbitalUpdates();
-    if (orbitalSatellites.length) {
-      orbitalViewer.flyTo(orbitalSatellites.map((item) => item.entity), { duration: 1.6 }).catch(() => {});
-    }
+    // Keep the planet as the default composition. A global flyTo over every
+    // satellite and its full orbit can move the camera far outside the useful view.
+    orbitalViewer.scene.requestRender();
   }
 
   async function loadOrbitalCatalog() {
@@ -1785,6 +1830,7 @@
       orbitalViewer.scene.requestRender();
     });
     $("loadOrbitalBtn").addEventListener("click", () => loadOrbitalCatalog());
+    $("orbitalHomeBtn").addEventListener("click", () => resetOrbitalCamera());
 
     $("loadWeatherGridBtn").addEventListener("click", () => loadWeatherGrid());
 
