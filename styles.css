@@ -251,3 +251,23 @@ footer a{color:#7cabb9}
 .weather-variable-select{min-width:158px}
 @media(max-width:720px){.weather-forecast-player{grid-template-columns:1fr 1fr}.weather-forecast-player input[type="range"]{grid-column:1 / -1;grid-row:2}.weather-forecast-player .radar-frame-time{justify-self:end}.orbital-visibility-toggles{gap:7px}}
 @media(max-width:420px){.weather-forecast-player{grid-template-columns:1fr}.weather-forecast-player input[type="range"]{grid-column:auto;grid-row:auto}.weather-forecast-player .radar-frame-time{justify-self:start}.weather-variable-select{min-width:100%}}
+
+
+/* NEXUS 6.4 — satellite imagery mode */
+.map-mode-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+.satellite-controls{display:grid;gap:11px;margin:10px 0;padding:13px;border:1px solid #31566b;border-radius:10px;background:linear-gradient(145deg,#102a3b,#0a1826)}
+.satellite-controls[hidden]{display:none!important}
+.satellite-control-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.satellite-control-head h3{margin:4px 0 0;color:#e2f5fa;font-size:12px}
+.satellite-control-head label,.satellite-date-tools label{color:#83aabb;font:8px 'DM Mono';letter-spacing:.8px}
+.satellite-layer-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:7px}
+.satellite-layer-select,.satellite-date-tools input[type=date]{min-width:175px;padding:8px 9px;background:#07141e;border:1px solid #2b586a;border-radius:7px;color:#def5f7;font:9px 'DM Mono'}
+.satellite-layer-select:focus,.satellite-date-tools input:focus{outline:2px solid #4bbdce;outline-offset:1px}
+.satellite-timeline{display:grid;grid-template-columns:auto minmax(120px,1fr) minmax(135px,auto);align-items:center;gap:10px;padding:9px 10px;border:1px solid #274c60;border-radius:8px;background:linear-gradient(90deg,#0a1b2a,#0c2432)}
+.satellite-timeline input[type=range],.satellite-date-tools input[type=range]{width:100%;accent-color:#69d9e6;cursor:pointer}
+.satellite-date-tools{display:grid;grid-template-columns:auto minmax(145px,auto) auto minmax(130px,1fr);align-items:center;gap:9px}
+.satellite-date-tools output{color:#d7f5fa;font:inherit}
+.satellite-controls .weather-disclaimer{line-height:1.6}
+@media(max-width:900px){.satellite-control-head{align-items:flex-start;flex-direction:column}.satellite-layer-row{justify-content:flex-start}}
+@media(max-width:720px){.map-mode-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.satellite-timeline{grid-template-columns:1fr 1fr}.satellite-timeline input[type=range]{grid-column:1 / -1;grid-row:2}.satellite-timeline .radar-frame-time{justify-self:end}.satellite-date-tools{grid-template-columns:auto 1fr}.satellite-date-tools input[type=range]{grid-column:1 / -1}}
+@media(max-width:420px){.satellite-timeline{grid-template-columns:1fr}.satellite-timeline input[type=range]{grid-column:auto;grid-row:auto}.satellite-timeline .radar-frame-time{justify-self:start}.satellite-date-tools{grid-template-columns:1fr}.satellite-date-tools input[type=range]{grid-column:auto}.satellite-layer-select{width:100%;min-width:0}}
