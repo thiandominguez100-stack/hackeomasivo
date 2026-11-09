@@ -1056,43 +1056,59 @@
 
     const weatherActive = mode === "weather";
     const cyberActive = mode === "cyber";
+    const orbitalActive = mode === "orbital";
     $("weatherControls").hidden = !weatherActive;
+    $("orbitalControls").hidden = !orbitalActive;
+    $("map").hidden = orbitalActive;
+    $("orbitalScene").hidden = !orbitalActive;
     $("buildingToggle").parentElement.hidden = !cyberActive;
     $("cityJumpControl").hidden = !cyberActive;
-    $("orbitalPanel").classList.toggle("mode-focus", mode === "orbital");
-    if (map) {
-      map.resize();
-      ["nexus-country-glow", "nexus-country-points"].forEach((id) => {
-        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", cyberActive ? "visible" : "none");
-      });
-      ["nexus-3d-buildings", "nexus-building-footprints"].forEach((id) => {
-        if (map.getLayer(id)) {
-          const show = cyberActive && $("buildingToggle").checked;
-          map.setLayoutProperty(id, "visibility", show ? "visible" : "none");
-        }
-      });
-      if (map.getLayer("nexus-radar-layer")) {
-        map.setLayoutProperty("nexus-radar-layer", "visibility", weatherActive ? "visible" : "none");
-      }
-      ["nexus-weather-heatmap", "nexus-weather-grid-points", "nexus-weather-grid-wind", "nexus-weather-selection-layer"].forEach((id) => {
-        if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", weatherActive ? "visible" : "none");
-      });
-      $("map").classList.toggle("weather-active", weatherActive);
-      $("map").classList.toggle("orbital-active", mode === "orbital");
-      $("orbitalVisualNote").hidden = mode !== "orbital";
-      map.triggerRepaint();
-    }
-    if (!weatherActive) pauseRadarPlayback();
+    $("orbitalPanel").classList.toggle("mode-focus", orbitalActive);
 
+    if (map && !orbitalActive) {
+      window.requestAnimationFrame(() => {
+        if (!map || $("map").hidden) return;
+        map.resize();
+        ["nexus-country-glow", "nexus-country-points"].forEach((id) => {
+          if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", cyberActive ? "visible" : "none");
+        });
+        ["nexus-3d-buildings", "nexus-building-footprints"].forEach((id) => {
+          if (map.getLayer(id)) {
+            const show = cyberActive && $("buildingToggle").checked;
+            map.setLayoutProperty(id, "visibility", show ? "visible" : "none");
+          }
+        });
+        if (map.getLayer("nexus-radar-layer")) {
+          map.setLayoutProperty("nexus-radar-layer", "visibility", weatherActive ? "visible" : "none");
+        }
+        if (map.getLayer("nexus-weather-cells-fill")) {
+          map.setLayoutProperty("nexus-weather-cells-fill", "visibility", weatherActive ? "visible" : "none");
+        }
+        if (map.getLayer("nexus-weather-grid-points")) {
+          map.setLayoutProperty("nexus-weather-grid-points", "visibility", weatherActive ? "visible" : "none");
+        }
+        if (map.getLayer("nexus-weather-grid-wind")) {
+          map.setLayoutProperty("nexus-weather-grid-wind", "visibility",
+            weatherActive && activeWeatherVariable === "wind" ? "visible" : "none");
+        }
+        if (map.getLayer("nexus-weather-selection-layer")) {
+          map.setLayoutProperty("nexus-weather-selection-layer", "visibility", weatherActive ? "visible" : "none");
+        }
+        map.triggerRepaint();
+      });
+    }
+
+    if (!weatherActive) pauseRadarPlayback();
     const heading = $("mapHeading");
     const annotation = $("mapAnnotation");
     const footLeft = $("mapFootLeft");
     const footRight = $("mapFootRight");
+
     if (mode === "cyber") {
       safeText(heading, "Planeta Tierra · actividad observada");
       safeText(annotation, "País de registro de red · centroide aproximado · no localiza incidentes ni víctimas");
       safeText(footLeft, "DATOS AGREGADOS · SIN RUTAS NI CONEXIONES INVENTADAS");
-      safeText(footRight, "ZOOM · ROTAR · INSPECCIONAR EDIFICIOS");
+      safeText(footRight, "GLOBO 3D · ZOOM · ROTACIÓN · EDIFICIOS");
       if (mapReady) {
         const zoom = map.getZoom();
         safeText($("mapStatus"), zoom > 5.2
@@ -1100,21 +1116,23 @@
           : "Vista global · datos de sensores agregados por país");
       }
     } else if (mode === "weather") {
-      safeText(heading, "Global Weather · precipitación y condiciones actuales");
-      safeText(annotation, "Radar observado donde existe cobertura · consulta puntual basada en modelos");
-      safeText(footLeft, "RADAR HISTÓRICO · INTERVALOS DE 10 MIN · SIN PRONÓSTICO DE RADAR");
-      safeText(footRight, "SELECCIONÁ UN PUNTO PARA CONSULTAR EL TIEMPO");
+      safeText(heading, "GLOBAL WEATHER · campos atmosféricos mundiales");
+      safeText(annotation, "Modelo meteorológico global por celdas · el radar histórico se muestra solo donde hay cobertura");
+      safeText(footLeft, "OPEN-METEO · MALLA GLOBAL DE 15° · 288 CELDAS");
+      safeText(footRight, "CAMBIÁ TEMPERATURA · LLUVIA · VIENTO · HUMEDAD · NUBES · PRESIÓN");
       if (mapReady) {
-        loadRadarFrames();
         loadWeatherGrid();
-        safeText($("mapStatus"), "Cargando capas meteorológicas globales…");
+        loadRadarFrames();
+        safeText($("mapStatus"), "Cargando la malla atmosférica mundial…");
       }
     } else {
-      safeText(heading, "Orbital Intelligence · catálogo público");
-      safeText(annotation, "Contexto agregado de objetos espaciales · sin posiciones individuales");
-      safeText(footLeft, "CATÁLOGOS PÚBLICOS · COBERTURA INCOMPLETA");
-      safeText(footRight, "SIN TRAYECTORIAS NI SEGUIMIENTO INDIVIDUAL");
-      safeText($("mapStatus"), "Modo orbital · consultá el resumen agregado de CelesTrak");
+      safeText(heading, "ORBITAL INTELLIGENCE · satélites civiles");
+      safeText(annotation, "Escena orbital 3D · posiciones calculadas con SGP4 sobre elementos OMM publicados");
+      safeText(footLeft, "CELESTRAK WEATHER · MISIONES CIVILES METEOROLÓGICAS");
+      safeText(footRight, "ÓRBITAS ESTIMADAS · NO TELEMETRÍA GPS EN VIVO");
+      initOrbitalViewer();
+      loadOrbitalCatalog();
+      window.setTimeout(() => orbitalViewer && orbitalViewer.resize(), 120);
     }
   }
 
@@ -1182,25 +1200,20 @@
       }
       map.addSource("nexus-country-observations", { type: "geojson", data: emptyCollection() });
       map.addSource("nexus-weather-grid", { type: "geojson", data: emptyCollection() });
+      map.addSource("nexus-weather-cells", { type: "geojson", data: emptyCollection() });
       map.addLayer({
-        id: "nexus-weather-heatmap",
-        type: "heatmap",
-        source: "nexus-weather-grid",
+        id: "nexus-weather-cells-fill",
+        type: "fill",
+        source: "nexus-weather-cells",
         layout: { visibility: "none" },
         paint: {
-          "heatmap-weight": 1,
-          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0.9, 4, 1.25, 7, 1.6],
-          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 34, 2, 52, 5, 78],
-          "heatmap-opacity": 0.62,
-          "heatmap-color": [
-            "interpolate", ["linear"], ["heatmap-density"],
-            0, "rgba(30,75,150,0)",
-            0.18, "rgba(55,130,220,0.28)",
-            0.38, "rgba(65,195,220,0.48)",
-            0.58, "rgba(65,205,145,0.58)",
-            0.78, "rgba(245,195,80,0.68)",
-            1, "rgba(235,95,70,0.78)"
-          ]
+          "fill-color": [
+            "interpolate", ["linear"], ["coalesce", ["get", "temperature"], 0],
+            -35, "#3859a8", -10, "#398bc5", 5, "#54b9a9",
+            20, "#d6c85e", 35, "#e87950", 48, "#a93d65"
+          ],
+          "fill-opacity": 0.68,
+          "fill-outline-color": "rgba(155,225,240,0.18)"
         }
       });
       map.addLayer({
@@ -1209,12 +1222,12 @@
         source: "nexus-weather-grid",
         layout: { visibility: "none" },
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 6.5, 3, 9, 6, 12],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 1, 2.2, 3, 3.4, 6, 5],
           "circle-color": [
             "interpolate", ["linear"], ["get", "temperature"],
             -20, "#5687d9", 0, "#55b9dc", 15, "#57c78d", 25, "#efc45d", 35, "#e87552"
           ],
-          "circle-opacity": 0.94,
+          "circle-opacity": 0.24,
           "circle-stroke-color": "#f5fcff",
           "circle-stroke-width": 1.2
         }
@@ -1363,6 +1376,8 @@
     $("cyberModeBtn").addEventListener("click", () => setMapMode("cyber"));
     $("weatherModeBtn").addEventListener("click", () => setMapMode("weather"));
     $("orbitalModeBtn").addEventListener("click", () => setMapMode("orbital"));
+    $("weatherVariableSelect").addEventListener("change", () => applyWeatherVariable($("weatherVariableSelect").value));
+    $("loadOrbitalBtn").addEventListener("click", () => loadOrbitalCatalog(true));
 
     $("loadWeatherGridBtn").addEventListener("click", () => loadWeatherGrid(true));
 
