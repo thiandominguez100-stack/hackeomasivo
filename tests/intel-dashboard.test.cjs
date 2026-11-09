@@ -42,7 +42,7 @@ test("no generated simulation events or fake route fields are present", () => {
 
 test("published page is an observatory and does not load the old simulator", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  assert.match(html, /BUILD 6.2/);
+  assert.match(html, /BUILD 6.3/);
   assert.match(html, /DShield/);
   assert.match(html, /CISA/);
   assert.doesNotMatch(html, /simulation\.js/);
@@ -86,18 +86,18 @@ test("reports feed tracks the expanded eight-source allowlist", () => {
 test("interface includes the eight-source health list", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
-  assert.match(html, /BUILD 6.2/);
+  assert.match(html, /BUILD 6.3/);
   assert.match(html, /reportSourcesHealth/);
   assert.match(app, /acscAustralia/);
   assert.match(app, /certUa/);
 });
 
 
-test("NEXUS 6.2 warns that country markers are national centroids and hides them at local zoom", () => {
+test("NEXUS 6.3 warns that country markers are national centroids and hides them at local zoom", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   assert.match(html, /centroide nacional aproximado/);
-  assert.match(html, /BUILD 6.2/);
+  assert.match(html, /BUILD 6.3/);
   assert.match(app, /maxzoom: 5\.2/);
   assert.match(app, /marcadores nacionales ocultos/);
   assert.match(app, /No indica dónde ocurrió un incidente/);
@@ -126,13 +126,13 @@ test("publication history archive is loaded by the interface and documented as m
 });
 
 
-test("NEXUS 6.2 retains the 3D MapLibre globe and documents safe orbital scope", () => {
+test("NEXUS 6.3 retains the 3D MapLibre globe and documents safe orbital scope", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6.2/);
-  assert.match(html, /release=6.2/);
+  assert.match(html, /BUILD 6.3/);
+  assert.match(html, /release=6.3/);
   assert.match(html, /Contexto orbital/);
   assert.match(html, /cesiumjs\/releases\/1\.144/);
   assert.match(app, /styles\/liberty/);
@@ -143,12 +143,12 @@ test("NEXUS 6.2 retains the 3D MapLibre globe and documents safe orbital scope",
   assert.match(readme, /no procesa ni representa satélites militares/);
 });
 
-test("NEXUS 6.2 exposes all modes and global weather source controls", () => {
+test("NEXUS 6.3 exposes all modes and global weather source controls", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6.2/);
+  assert.match(html, /BUILD 6.3/);
   assert.match(html, /id="cyberModeBtn"/);
   assert.match(html, /id="weatherModeBtn"/);
   assert.match(html, /id="orbitalModeBtn"/);
@@ -181,7 +181,7 @@ test("NEXUS weather mode covers the globe with a 288-cell field and selectable v
   assert.match(app, /surface_pressure/);
   assert.match(app, /showers/);
   assert.match(app, /is_day/);
-  assert.doesNotMatch(app, /dew_point_2m/);
+  assert.match(app, /dew_point_2m/);
   assert.match(app, /pressure_msl/);
   assert.match(app, /function applyWeatherVariable/);
   assert.match(app, /60 \* 60 \* 1000/);
@@ -214,4 +214,30 @@ test("NEXUS orbital mode uses Cesium 3D and SGP4 for the public civil-weather wh
   assert.doesNotMatch(app.match(/CIVIL_WEATHER_MISSION = (.*);/)?.[1] || "", /DMSP|EWS-G|FENGYUN/);
   assert.match(css, /orbital-scene/);
   assert.match(readme, /no procesa ni representa satélites militares/);
+});
+
+test("NEXUS 6.3 adds a 24-hour global weather forecast timeline", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
+  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
+  assert.match(html, /id="weatherTimeSlider"/);
+  assert.match(html, /id="weatherPlayBtn"/);
+  assert.match(html, /id="weatherTimeLabel"/);
+  assert.match(html, /id="orbitalTrailsToggle"/);
+  assert.match(html, /id="orbitalLabelsToggle"/);
+  assert.match(app, /WEATHER_HOURLY_FIELDS/);
+  assert.match(app, /forecast_hours: "24"/);
+  assert.match(app, /uv_index/);
+  assert.match(app, /shortwave_radiation/);
+  assert.match(app, /cloud_cover_low/);
+  assert.match(app, /soil_moisture_0_to_7cm/);
+  assert.match(app, /function applyWeatherForecastFrame/);
+  assert.match(app, /weatherPlaybackHandle/);
+  assert.match(app, /function pauseWeatherForecast/);
+  assert.match(app, /orbitalViewer\.forceResize\(\)/);
+  assert.match(app, /refreshTrails/);
+  assert.match(css, /weather-forecast-player/);
+  assert.match(css, /orbital-visibility-toggles/);
+  assert.match(readme, /pronóstico de 24 horas/);
 });
