@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111b">
   <meta name="description" content="NEXUS: observatorio global de ciberseguridad, meteorología y contexto orbital mediante fuentes públicas.">
-  <title>NEXUS 6.3.1 — Global Earth Intelligence</title>
+  <title>NEXUS 6.4 — Global Earth Intelligence</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/favicon.svg">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=18">
+  <link rel="stylesheet" href="./styles.css?v=19">
 </head>
 <body>
 <div class="shell">
   <header>
-    <a class="brand" href="./?release=6.3.1" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
+    <a class="brand" href="./?release=6.4" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
     <div class="header-right">
       <div class="status-pill" id="overallStatus"><i></i><span>Conectando fuentes</span></div>
       <span class="utc-clock" id="clock">--:--:-- UTC</span>
@@ -24,7 +24,7 @@
 
   <section class="hero">
     <div>
-      <label class="eyebrow">CYBER · WEATHER · ORBITAL · BUILD 6.3.1</label>
+      <label class="eyebrow">CYBER · WEATHER · ORBITAL · BUILD 6.4</label>
       <h1>Global <em>Earth Intelligence</em> Observatory</h1>
       <p>Observación defensiva, meteorología mundial y contexto espacial con fuentes públicas verificables.</p>
     </div>
@@ -80,6 +80,7 @@
       <div class="map-mode-tabs" role="group" aria-label="Modos del observatorio">
         <button id="cyberModeBtn" class="mode-tab active" type="button" aria-pressed="true">CYBER</button>
         <button id="weatherModeBtn" class="mode-tab" type="button" aria-pressed="false">GLOBAL WEATHER</button>
+        <button id="satelliteModeBtn" class="mode-tab" type="button" aria-pressed="false">SATELLITE IMAGERY</button>
         <button id="orbitalModeBtn" class="mode-tab" type="button" aria-pressed="false">ORBITAL</button>
       </div>
       <div id="mapAnnotation" class="map-annotation"><span class="legend-circle"></span> País de registro de red · centroide aproximado · no localiza incidentes ni víctimas</div>
@@ -139,6 +140,35 @@
           <p id="weatherPointUpdated" class="method-note">Open‑Meteo · condiciones actuales estimadas por modelo · elegí una ubicación</p>
         </div>
         <p class="weather-disclaimer">El radar muestra únicamente zonas con cobertura disponible y hasta 2 horas de historial; no es un pronóstico. La consulta puntual usa datos de modelo y puede tener retraso. <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">Radar: RainViewer</a> · <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Modelo: Open‑Meteo</a>.</p>
+      </div>
+      <div id="satelliteControls" class="satellite-controls" hidden>
+        <div class="satellite-control-head">
+          <div><label>EARTH IMAGERY · NASA EOSDIS / GIBS</label><h3>Imágenes satelitales reales sobre el globo 3D</h3></div>
+          <div class="satellite-layer-row">
+            <label for="satelliteLayerSelect">SENSOR / CAPA</label>
+            <select id="satelliteLayerSelect" class="satellite-layer-select">
+              <option value="modisTerra">MODIS Terra · color natural</option>
+              <option value="modisAqua">MODIS Aqua · color natural</option>
+              <option value="goesEast">GOES-East · GeoColor</option>
+              <option value="goesWest">GOES-West · GeoColor</option>
+            </select>
+            <button id="loadSatelliteImageryBtn" class="small-action" type="button">ACTUALIZAR IMAGEN</button>
+          </div>
+        </div>
+        <div class="satellite-timeline">
+          <button id="satellitePlayBtn" class="small-action play-action" type="button">▶ REPRODUCIR DÍAS</button>
+          <input id="satelliteFrameSlider" type="range" min="0" max="13" value="12" step="1" aria-label="Recorrer imágenes satelitales de los últimos 14 días">
+          <span id="satelliteDateLabel" class="radar-frame-time">Fecha UTC · preparando</span>
+        </div>
+        <div class="satellite-date-tools">
+          <label for="satelliteDateInput">FECHA UTC</label>
+          <input id="satelliteDateInput" type="date">
+          <label for="satelliteOpacitySlider">TRANSPARENCIA <output id="satelliteOpacityValue">90%</output></label>
+          <input id="satelliteOpacitySlider" type="range" min="10" max="100" value="90" step="5">
+        </div>
+        <p id="satelliteImageryStatus" class="weather-grid-status">La primera capa se solicitará al entrar en este modo.</p>
+        <p id="satelliteLayerDescription" class="weather-disclaimer">MODIS Terra · color natural · mosaico diario con cobertura variable.</p>
+        <p class="weather-disclaimer">MODIS ofrece mosaicos diarios de cobertura amplia, pero puede haber huecos por nubes, noche o falta de pasada. GOES-East y GOES-West son vistas regionales; GeoColor combina color diurno e infrarrojo nocturno. Son imágenes fechadas, no video en directo. Fuente: <a href="https://worldview.earthdata.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA Worldview</a> · <a href="https://nasa-gibs.github.io/gibs-api-docs/" target="_blank" rel="noopener noreferrer">NASA GIBS</a>.</p>
       </div>
       <div id="orbitalControls" class="orbital-controls" hidden>
         <div class="orbital-control-head">
@@ -270,13 +300,13 @@
   </section>
 
   <footer>
-    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.3.1</span>
-    <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a></span>
+    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.4</span>
+    <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · <a href="https://earthdata.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA EOSDIS</a></span>
   </footer>
 </div>
 <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
 <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.144.0/Build/Cesium/";</script>
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.144.0/Build/Cesium/Cesium.js"></script>
-<script src="./app.js?v=20"></script>
+<script src="./app.js?v=21"></script>
 </body>
 </html>
