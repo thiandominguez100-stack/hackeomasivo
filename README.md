@@ -60,7 +60,7 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El modo Orbital usa un visor CesiumJS independiente para renderizar una esfera terrestre 3D con marcadores y arcos orbitales a distintas alturas.
 - Los elementos orbitales OMM se consultan desde el grupo Weather de CelesTrak. La aplicación filtra una lista explícita de misiones civiles meteorológicas y de observación de la Tierra; no procesa ni representa satélites militares o estratégicos.
 - Satellite.js propaga los elementos OMM con SGP4. Las posiciones calculadas se actualizan en la escena cada cinco segundos; el catálogo orbital se guarda localmente y se vuelve a consultar como máximo cada dos horas; los accesos intermedios reutilizan esa última respuesta.
-- La lista permite enfocar el globo en una misión y seleccionar su marcador para ver nombre, altitud estimada, inclinación, período y época OMM.
+- La lista permite enfocar el globo en una misión y seleccionar su marcador para ver nombre, altitud estimada, inclinación, período y época OMM. El almacenamiento local conserva solo los registros que pasan la lista de misiones civiles permitidas.
 - Esta selección no equivale a todos los satélites que existen. El catálogo público puede contener huecos, objetos retirados, elementos antiguos o clasificaciones incompletas. Los resultados son posiciones matemáticamente calculadas, no telemetría GPS ni una fuente de navegación operacional.
 - CelesTrak documenta OMM como formato compatible con números de catálogo ampliados; Satellite.js admite JSON OMM y propagación SGP4. NEXUS no usa TLE antiguo de cinco dígitos para estos objetos.
 
