@@ -526,7 +526,7 @@
         type: "Feature", properties,
         geometry: { type: "Point", coordinates }
       });
-      const gridPoint = WEATHER_GRID_COORDS[recordIndex] || record;
+      const gridPoint = WEATHER_GRID_COORDS[record.gridIndex] || record;
       cellFeatures.push({
         type: "Feature", properties,
         geometry: weatherCellGeometry(gridPoint.latitude, gridPoint.longitude)
@@ -552,63 +552,54 @@
 
   async function loadWeatherGrid() {
     if (!mapReady || weatherGridLoading) return;
-
     const pointSource = map.getSource("nexus-weather-grid");
     const cellSource = map.getSource("nexus-weather-cells");
     if (!pointSource || !cellSource) return;
 
     let cached = null;
     if (!weatherGridRecords.length) {
-      try {
-        cached = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || "null");
-      } catch (error) {
-        console.warn("NEXUS weather cache read:", error);
-      }
-      if (cached && Array.isArray(cached.records) &&
-          cached.points && cached.points.type === "FeatureCollection" &&
-          cached.cells && cached.cells.type === "FeatureCollection" &&
-          Number.isFinite(Number(cached.fetchedAt))) {
-        pointSource.setData(cached.points);
-        cellSource.setData(cached.cells);
+      try { cached = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || "null"); }
+      catch (error) { console.warn("NEXUS weather cache read:", error); }
+      if (cached && Array.isArray(cached.records) && cached.records.length >= 200 &&
+          Array.isArray(cached.forecastTimes) && cached.forecastTimes.length >= 12 &&
+          Number.isFinite(Number(cached.fetchedAt)) &&
+          cached.records.every((record) => record && record.hourly && Number.isFinite(Number(record.gridIndex)))) {
         weatherGridRecords = cached.records;
+        weatherForecastTimes = cached.forecastTimes;
         weatherGridFetchedAt = Number(cached.fetchedAt);
-        safeText($("weatherCoverageCount"), cached.cells.features.length + " CELDAS EN CACHÉ");
-        safeText($("weatherGridStatus"), cached.cells.features.length + " celdas restauradas · datos de " +
-          ageLabel(new Date(weatherGridFetchedAt).toISOString()) + " · comprobando actualización del modelo");
-        applyWeatherVariable(activeWeatherVariable);
+        applyWeatherForecastFrame(0);
+        safeText($("weatherGridStatus"), weatherGridRecords.length + " ubicaciones restauradas · " +
+          weatherForecastTimes.length + " horas de pronóstico · comprobando actualización");
       }
     }
 
-    if (weatherGridRecords.length &&
-        Date.now() - weatherGridFetchedAt < WEATHER_GRID_REFRESH_MS) {
+    if (weatherGridRecords.length && Date.now() - weatherGridFetchedAt < WEATHER_GRID_REFRESH_MS) {
       applyWeatherVariable(activeWeatherVariable);
-      safeText($("mapStatus"), "Modelo mundial en caché · " + weatherGridRecords.length + " muestras · datos guardados localmente");
+      applyWeatherForecastFrame(weatherTimeIndex);
+      safeText($("mapStatus"), "Pronóstico global en caché · " + weatherGridRecords.length + " ubicaciones · datos guardados localmente");
       return;
     }
 
     weatherGridLoading = true;
     const button = $("loadWeatherGridBtn");
-    if (button) {
-      button.disabled = true;
-      safeText(button, "CONSULTANDO MODELO…");
-    }
+    if (button) { button.disabled = true; safeText(button, "CONSULTANDO MODELO…"); }
     safeText($("weatherGridStatus"), weatherGridRecords.length
-      ? "Actualizando datos meteorológicos; la última malla válida permanece visible…"
-      : "Descargando el modelo global · 288 ubicaciones · 15 variables…");
+      ? "Actualizando el pronóstico; la última malla válida permanece visible…"
+      : "Descargando el modelo mundial · 288 ubicaciones · pronóstico de 24 horas…");
 
     try {
       const query = new URLSearchParams({
         latitude: WEATHER_GRID_COORDS.map((point) => point.latitude).join(","),
         longitude: WEATHER_GRID_COORDS.map((point) => point.longitude).join(","),
         current: WEATHER_CURRENT_FIELDS,
+        hourly: WEATHER_HOURLY_FIELDS,
+        forecast_hours: "24",
         wind_speed_unit: "kmh",
         precipitation_unit: "mm",
         timezone: "GMT"
       });
       const response = await fetch("https://api.open-meteo.com/v1/forecast?" + query.toString(), {
-        method: "GET",
-        cache: "no-store",
-        headers: { "Accept": "application/json" }
+        method: "GET", cache: "no-store", headers: { "Accept": "application/json" }
       });
       if (!response.ok) throw new Error("Open-Meteo respondió " + response.status);
       const payload = await response.json();
@@ -616,110 +607,69 @@
       if (rows.length !== WEATHER_GRID_COORDS.length) {
         throw new Error("El proveedor devolvió " + rows.length + " ubicaciones; se esperaban " + WEATHER_GRID_COORDS.length + ".");
       }
-
+      const forecastTimes = rows.find((row) => row && row.hourly && Array.isArray(row.hourly.time))?.hourly.time || [];
+      if (forecastTimes.length < 12) throw new Error("El proveedor devolvió menos de 12 horas de pronóstico.");
+      const numberOrNull = (value) => value === null || value === undefined || value === "" || !Number.isFinite(Number(value))
+        ? null : Number(value);
       const records = [];
-      const pointFeatures = [];
-      const cellFeatures = [];
       rows.forEach((row, index) => {
         const current = row && row.current;
+        const hourly = row && row.hourly;
         const gridPoint = WEATHER_GRID_COORDS[index];
-        if (!current || !gridPoint) return;
-        const numberOrNull = (value) => value === null || value === undefined || value === "" || !Number.isFinite(Number(value))
-          ? null : Number(value);
-        const record = {
+        if (!current || !hourly || !gridPoint) return;
+        const hourlyValues = {};
+        WEATHER_HOURLY_FIELDS.split(",").forEach((field) => {
+          hourlyValues[field] = Array.isArray(hourly[field]) ? hourly[field] : [];
+        });
+        if (!hourlyValues.temperature_2m.some((value) => numberOrNull(value) !== null)) return;
+        records.push({
+          gridIndex: index,
           latitude: Number.isFinite(Number(row.latitude)) ? Number(row.latitude) : gridPoint.latitude,
           longitude: Number.isFinite(Number(row.longitude)) ? Number(row.longitude) : gridPoint.longitude,
-          temperature: numberOrNull(current.temperature_2m),
-          feelsLike: numberOrNull(current.apparent_temperature),
-          humidity: numberOrNull(current.relative_humidity_2m),
-          cloudCover: numberOrNull(current.cloud_cover),
-          precipitation: numberOrNull(current.precipitation),
-          rain: numberOrNull(current.rain),
-          showers: numberOrNull(current.showers),
-          snowfall: numberOrNull(current.snowfall),
-          pressure: numberOrNull(current.pressure_msl),
-          surfacePressure: numberOrNull(current.surface_pressure),
-          windSpeed: numberOrNull(current.wind_speed_10m),
-          windDirection: numberOrNull(current.wind_direction_10m),
-          windGusts: numberOrNull(current.wind_gusts_10m),
-          weatherCode: numberOrNull(current.weather_code),
-          isDay: numberOrNull(current.is_day),
-          time: String(current.time || "")
-        };
-        if (record.temperature === null) return;
-        records.push(record);
-        const properties = {
-          temperature: record.temperature,
-          feelsLike: record.feelsLike,
-          humidity: record.humidity,
-          cloudCover: record.cloudCover,
-          precipitation: record.precipitation,
-          rain: record.rain,
-          showers: record.showers,
-          snowfall: record.snowfall,
-          pressure: record.pressure,
-          surfacePressure: record.surfacePressure,
-          windSpeed: record.windSpeed,
-          windDirection: record.windDirection,
-          windArrow: windArrow(record.windDirection),
-          windGusts: record.windGusts,
-          weatherCode: record.weatherCode,
-          isDay: record.isDay,
-          time: record.time
-        };
-        Object.keys(properties).forEach((key) => {
-          if (properties[key] === null || properties[key] === undefined) delete properties[key];
-        });
-        pointFeatures.push({
-          type: "Feature",
-          properties,
-          geometry: { type: "Point", coordinates: [record.longitude, record.latitude] }
-        });
-        cellFeatures.push({
-          type: "Feature",
-          properties,
-          geometry: weatherCellGeometry(gridPoint.latitude, gridPoint.longitude)
+          current: {
+            temperature: numberOrNull(current.temperature_2m),
+            feelsLike: numberOrNull(current.apparent_temperature),
+            humidity: numberOrNull(current.relative_humidity_2m),
+            cloudCover: numberOrNull(current.cloud_cover),
+            precipitation: numberOrNull(current.precipitation),
+            pressure: numberOrNull(current.pressure_msl),
+            windSpeed: numberOrNull(current.wind_speed_10m),
+            windDirection: numberOrNull(current.wind_direction_10m),
+            windGusts: numberOrNull(current.wind_gusts_10m),
+            weatherCode: numberOrNull(current.weather_code),
+            isDay: numberOrNull(current.is_day),
+            time: String(current.time || "")
+          },
+          hourly: hourlyValues
         });
       });
 
-      if (cellFeatures.length < 200) {
-        throw new Error("El modelo global entregó solo " + cellFeatures.length + " celdas válidas; no se reemplazó la última capa buena.");
+      if (records.length < 200) {
+        throw new Error("El pronóstico global entregó solo " + records.length + " ubicaciones válidas; se conserva la última malla buena.");
       }
-      const points = { type: "FeatureCollection", features: pointFeatures };
-      const cells = { type: "FeatureCollection", features: cellFeatures };
-      pointSource.setData(points);
-      cellSource.setData(cells);
       weatherGridRecords = records;
+      weatherForecastTimes = forecastTimes.map(String);
       weatherGridFetchedAt = Date.now();
-
+      weatherTimeIndex = 0;
       try {
         localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({
-          fetchedAt: weatherGridFetchedAt, records, points, cells
+          fetchedAt: weatherGridFetchedAt, forecastTimes: weatherForecastTimes, records
         }));
-      } catch (error) {
-        console.warn("NEXUS weather cache write:", error);
-      }
+      } catch (error) { console.warn("NEXUS weather cache write:", error); }
 
-      safeText($("weatherCoverageCount"), cellFeatures.length + " CELDAS ACTIVAS");
-      safeText($("weatherGridStatus"), cellFeatures.length + " celdas de modelo cubriendo la esfera · " +
-        (records[0].time ? dateLabel(records[0].time + "Z") : "hora no disponible") +
-        " · actualización como máximo cada 60 min");
-      safeText($("mapStatus"), "Modelo mundial cargado · " + cellFeatures.length + " celdas · 15 variables disponibles");
       applyWeatherVariable(activeWeatherVariable);
-      map.triggerRepaint();
+      applyWeatherForecastFrame(0);
+      safeText($("mapStatus"), "Pronóstico global cargado · " + records.length + " ubicaciones · " + weatherForecastTimes.length + " horas");
     } catch (error) {
       console.warn("NEXUS global weather grid:", error);
-      safeText($("weatherGridStatus"), "No se pudo actualizar el modelo global: " + (error.message || "error de red") +
-        (weatherGridRecords.length ? ". Se conserva la última malla válida guardada." : ". Probá actualizar más tarde."));
+      safeText($("weatherGridStatus"), "No se pudo actualizar el pronóstico: " + (error.message || "error de red") +
+        (weatherGridRecords.length ? ". Se conserva la última malla guardada." : ". Probá más tarde."));
       safeText($("mapStatus"), weatherGridRecords.length
-        ? "Modelo meteorológico guardado · actualización de fuente pendiente"
+        ? "Pronóstico meteorológico guardado · actualización pendiente"
         : "Fuente meteorológica temporalmente no disponible");
     } finally {
       weatherGridLoading = false;
-      if (button) {
-        button.disabled = false;
-        safeText(button, "ACTUALIZAR MODELO");
-      }
+      if (button) { button.disabled = false; safeText(button, "ACTUALIZAR MODELO"); }
     }
   }
 
