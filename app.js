@@ -487,10 +487,67 @@
     safeText($("weatherLegendLabel"), visual.label);
     const select = $("weatherVariableSelect");
     if (select && select.value !== activeWeatherVariable) select.value = activeWeatherVariable;
-    if (weatherGridRecords.length) {
-      safeText($("weatherGridStatus"), weatherGridRecords.length + " muestras distribuidas por todo el globo · " +
-        ageLabel(weatherGridRecords[0].time) + " · variable: " + visual.label.toLowerCase());
+    if (weatherForecastTimes.length) {
+      const slider = $("weatherTimeSlider");
+      if (slider) slider.max = String(weatherForecastTimes.length - 1);
+      applyWeatherForecastFrame(weatherTimeIndex);
     }
+  }
+
+  function pauseWeatherForecast() {
+    if (weatherPlaybackHandle) {
+      window.clearInterval(weatherPlaybackHandle);
+      weatherPlaybackHandle = null;
+    }
+    const button = $("weatherPlayBtn");
+    if (button) safeText(button, "▶ ANIMAR PRONÓSTICO");
+  }
+
+  function applyWeatherForecastFrame(index) {
+    if (!weatherGridRecords.length || !weatherForecastTimes.length || !mapReady || !map) return;
+    const last = weatherForecastTimes.length - 1;
+    weatherTimeIndex = Math.max(0, Math.min(last, Number(index) || 0));
+    const time = weatherForecastTimes[weatherTimeIndex];
+    const pointFeatures = [];
+    const cellFeatures = [];
+    weatherGridRecords.forEach((record, recordIndex) => {
+      const properties = {};
+      Object.entries(WEATHER_HOURLY_PROPERTY_MAP).forEach(([property, field]) => {
+        const values = record.hourly && record.hourly[field];
+        const raw = Array.isArray(values) ? values[weatherTimeIndex] : null;
+        const value = raw === null || raw === undefined || raw === "" ? null : Number(raw);
+        if (Number.isFinite(value)) properties[property] = value;
+      });
+      if (!Number.isFinite(properties.temperature)) return;
+      properties.windArrow = windArrow(properties.windDirection);
+      properties.time = String(time);
+      const coordinates = [record.longitude, record.latitude];
+      pointFeatures.push({
+        type: "Feature", properties,
+        geometry: { type: "Point", coordinates }
+      });
+      const gridPoint = WEATHER_GRID_COORDS[recordIndex] || record;
+      cellFeatures.push({
+        type: "Feature", properties,
+        geometry: weatherCellGeometry(gridPoint.latitude, gridPoint.longitude)
+      });
+    });
+    const pointSource = map.getSource("nexus-weather-grid");
+    const cellSource = map.getSource("nexus-weather-cells");
+    if (!pointSource || !cellSource) return;
+    pointSource.setData({ type: "FeatureCollection", features: pointFeatures });
+    cellSource.setData({ type: "FeatureCollection", features: cellFeatures });
+    const slider = $("weatherTimeSlider");
+    if (slider) {
+      slider.max = String(last);
+      slider.value = String(weatherTimeIndex);
+      slider.disabled = false;
+    }
+    safeText($("weatherTimeLabel"), formatWeatherTime(time) + " · " + (weatherTimeIndex + 1) + "/" + weatherForecastTimes.length);
+    safeText($("weatherCoverageCount"), cellFeatures.length + " CELDAS ACTIVAS");
+    const visual = WEATHER_VISUALS[activeWeatherVariable] || WEATHER_VISUALS.temperature;
+    safeText($("weatherGridStatus"), cellFeatures.length + " celdas globales · " + visual.label.toLowerCase() + " · pronóstico horario de Open-Meteo");
+    map.triggerRepaint();
   }
 
   async function loadWeatherGrid() {
