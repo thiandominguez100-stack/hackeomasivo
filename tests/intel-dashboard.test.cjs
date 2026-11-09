@@ -184,7 +184,7 @@ test("NEXUS weather mode covers the globe with a 288-cell field and selectable v
   assert.doesNotMatch(app, /dew_point_2m/);
   assert.match(app, /pressure_msl/);
   assert.match(app, /function applyWeatherVariable/);
-  assert.match(app, /30 \* 60 \* 1000/);
+  assert.match(app, /60 \* 60 \* 1000/);
   assert.match(css, /weather-variable-select/);
   assert.match(readme, /288 celdas/);
 });
@@ -205,6 +205,9 @@ test("NEXUS orbital mode uses Cesium 3D and SGP4 for the public civil-weather wh
   assert.match(app, /satelliteGeodetic/);
   assert.match(app, /setInterval\(updateOrbitalPositions, 5000\)/);
   assert.match(app, /ORBITAL_REFRESH_MS = 2 \* 60 \* 60 \* 1000/);
+  assert.match(app, /WEATHER_CACHE_KEY/);
+  assert.match(app, /ORBITAL_CACHE_KEY/);
+  assert.match(app, /localStorage\.setItem/);
   assert.match(app, /CIVIL_WEATHER_MISSION/);
   assert.match(app, /classification !== "U"/);
   assert.match(css, /orbital-scene/);
