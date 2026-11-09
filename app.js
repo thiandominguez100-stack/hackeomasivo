@@ -1043,54 +1043,88 @@
     }
   }
 
-  async function loadOrbitalCatalog(force = false) {
+  async function loadOrbitalCatalog() {
     if (orbitalLoading) return;
-    if (!force && orbitalSatellites.length && Date.now() - orbitalFetchedAt < ORBITAL_REFRESH_MS) {
-      safeText($("orbitalStatus"), orbitalSatellites.length + " satélites civiles meteorológicos · posiciones recalculadas cada 5 s · elementos OMM " +
-        ageLabel(new Date(orbitalFetchedAt).toISOString()) + ".");
-      updateOrbitalPositions();
-      return;
-    }
     if (!initOrbitalViewer()) return;
 
     orbitalLoading = true;
     const button = $("loadOrbitalBtn");
     if (button) {
       button.disabled = true;
-      safeText(button, "CONSULTANDO…");
+      safeText(button, "COMPROBANDO CATÁLOGO…");
     }
-    safeText($("orbitalStatus"), "Consultando CelesTrak · catálogo meteorológico OMM…");
 
     try {
-      const [satellite, response] = await Promise.all([
-        getSatelliteLibrary(),
-        fetch(ORBITAL_GROUP_URL, {
-          method: "GET",
-          cache: "no-store",
-          headers: { "Accept": "application/json" }
-        })
-      ]);
+      const satellite = await getSatelliteLibrary();
+      let cached = null;
+      try {
+        cached = JSON.parse(localStorage.getItem(ORBITAL_CACHE_KEY) || "null");
+      } catch (error) {
+        console.warn("NEXUS orbital cache read:", error);
+      }
+
+      if (!orbitalSatellites.length && cached && Array.isArray(cached.rows) &&
+          Number.isFinite(Number(cached.fetchedAt))) {
+        drawOrbitalCatalog(cached.rows, satellite);
+        orbitalFetchedAt = Number(cached.fetchedAt);
+        safeText($("orbitalUpdated"), dateLabel(new Date(orbitalFetchedAt).toISOString()));
+      }
+
+      if (orbitalSatellites.length &&
+          Date.now() - orbitalFetchedAt < ORBITAL_REFRESH_MS) {
+        updateOrbitalPositions();
+        safeText($("orbitalStatus"), orbitalSatellites.length +
+          " satélites civiles meteorológicos · posiciones SGP4 recalculadas cada 5 s · catálogo reutilizado durante 2 h.");
+        return;
+      }
+
+      safeText($("orbitalStatus"), orbitalSatellites.length
+        ? "Actualizando elementos OMM; se mantiene visible la última escena orbital válida…"
+        : "Consultando CelesTrak · catálogo meteorológico OMM…");
+
+      const response = await fetch(ORBITAL_GROUP_URL, {
+        method: "GET",
+        cache: "no-store",
+        headers: { "Accept": "application/json" }
+      });
       if (!response.ok) throw new Error("CelesTrak respondió " + response.status);
       const payload = await response.json();
       const rows = Array.isArray(payload) ? payload : [payload];
       if (!rows.length) throw new Error("El catálogo no devolvió registros OMM.");
+
       drawOrbitalCatalog(rows, satellite);
       orbitalFetchedAt = Date.now();
       safeText($("orbitalUpdated"), dateLabel(new Date(orbitalFetchedAt).toISOString()));
-      safeText($("orbitalStatus"), orbitalSatellites.length + " satélites civiles elegibles · posiciones SGP4 actualizadas cada 5 s · elementos orbitales refrescados cada 2 h.");
+      try {
+        localStorage.setItem(ORBITAL_CACHE_KEY, JSON.stringify({
+          fetchedAt: orbitalFetchedAt,
+          rows
+        }));
+      } catch (error) {
+        console.warn("NEXUS orbital cache write:", error);
+      }
+
+      safeText($("orbitalStatus"), orbitalSatellites.length +
+        " satélites civiles elegibles · posiciones SGP4 actualizadas cada 5 s · elementos OMM guardados durante 2 h.");
       if (!orbitalSatellites.length) {
-        safeText($("orbitalStatus"), "El feed respondió, pero no contiene objetos civiles elegibles con elementos recientes. No se dibujaron posiciones de otros tipos.");
+        safeText($("orbitalStatus"), "El feed respondió, pero no contiene objetos civiles elegibles con elementos recientes. No se dibujaron otros tipos.");
       }
     } catch (error) {
       console.error("NEXUS orbital data:", error);
-      safeText($("orbitalStatus"), "No se pudieron cargar los satélites: " + (error.message || "error de red") +
-        ". Verificá conexión o reintentá más tarde.");
-      safeText($("orbitalPropagation"), "Sin datos");
+      if (orbitalSatellites.length) {
+        safeText($("orbitalStatus"), "No se pudo actualizar CelesTrak: " + (error.message || "error de red") +
+          ". Se conserva la última escena válida, con elementos de " +
+          ageLabel(new Date(orbitalFetchedAt).toISOString()) + ".");
+      } else {
+        safeText($("orbitalStatus"), "No se pudieron cargar los satélites: " + (error.message || "error de red") +
+          ". Verificá conexión o reintentá más tarde.");
+        safeText($("orbitalPropagation"), "Sin datos");
+      }
     } finally {
       orbitalLoading = false;
       if (button) {
         button.disabled = false;
-        safeText(button, "ACTUALIZAR CATÁLOGO");
+        safeText(button, "COMPROBAR CATÁLOGO");
       }
     }
   }
@@ -1434,7 +1468,7 @@
     $("weatherModeBtn").addEventListener("click", () => setMapMode("weather"));
     $("orbitalModeBtn").addEventListener("click", () => setMapMode("orbital"));
     $("weatherVariableSelect").addEventListener("change", () => applyWeatherVariable($("weatherVariableSelect").value));
-    $("loadOrbitalBtn").addEventListener("click", () => loadOrbitalCatalog(true));
+    $("loadOrbitalBtn").addEventListener("click", () => loadOrbitalCatalog());
 
     $("loadWeatherGridBtn").addEventListener("click", () => loadWeatherGrid());
 
