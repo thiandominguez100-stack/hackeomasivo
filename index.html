@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#07111b">
   <meta name="description" content="NEXUS: observatorio global de ciberseguridad, meteorología y contexto orbital mediante fuentes públicas.">
-  <title>NEXUS 6.4 — Global Earth Intelligence</title>
+  <title>NEXUS 6.4.1 — Global Earth Intelligence</title>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/favicon.svg">
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css">
-  <link rel="stylesheet" href="./styles.css?v=20">
+  <link rel="stylesheet" href="./styles.css?v=21">
 </head>
 <body>
 <div class="shell">
   <header>
-    <a class="brand" href="./?release=6.4" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
+    <a class="brand" href="./?release=6.4.1" aria-label="NEXUS inicio"><b>N</b><span>NEXUS<small>GLOBAL INTELLIGENCE OBSERVATORY</small></span></a>
     <div class="header-right">
       <div class="status-pill" id="overallStatus"><i></i><span>Conectando fuentes</span></div>
       <span class="utc-clock" id="clock">--:--:-- UTC</span>
@@ -24,7 +24,7 @@
 
   <section class="hero">
     <div>
-      <label class="eyebrow">CYBER · WEATHER · SATELLITE · ORBITAL · BUILD 6.4</label>
+      <label class="eyebrow">CYBER · WEATHER · SATELLITE · ORBITAL · BUILD 6.4.1</label>
       <h1>Global <em>Earth Intelligence</em> Observatory</h1>
       <p>Observación defensiva, meteorología mundial y contexto espacial con fuentes públicas verificables.</p>
     </div>
@@ -177,13 +177,17 @@
             <label><input id="orbitalTrailsToggle" type="checkbox" checked> Mostrar órbitas</label>
             <label><input id="orbitalLabelsToggle" type="checkbox" checked> Mostrar nombres</label>
           </div>
-          <button id="loadOrbitalBtn" class="small-action" type="button">ACTUALIZAR CATÁLOGO</button>
+          <div class="orbital-action-row">
+            <button id="orbitalHomeBtn" class="small-action" type="button">⌖ CENTRAR PLANETA</button>
+            <button id="loadOrbitalBtn" class="small-action" type="button">ACTUALIZAR CATÁLOGO</button>
+          </div>
         </div>
         <div class="orbital-stats">
           <span>OBJETOS VISIBLES <b id="orbitalCount">—</b></span>
           <span>PROPAGACIÓN <b id="orbitalPropagation">SGP4 / OMM</b></span>
           <span>ÚLTIMA ACTUALIZACIÓN <b id="orbitalUpdated">—</b></span>
         </div>
+        <p id="orbitalSurfaceStatus" class="orbital-surface-status">Preparando textura terrestre integrada…</p>
         <p id="orbitalStatus" class="weather-grid-status">Al entrar se cargarán elementos orbitales públicos y se calcularán posiciones estimadas.</p>
         <div id="orbitalObjectList" class="orbital-object-list"><span class="empty-state">Catálogo pendiente.</span></div>
         <p class="weather-disclaimer">Solo misiones civiles meteorológicas y de observación pública incluidas en el filtro de NEXUS. Las posiciones son cálculos SGP4 basados en elementos orbitales publicados, no telemetría GPS en vivo; no se incluyen objetos militares o estratégicos. Fuente: <a href="https://celestrak.org/NORAD/elements/gp.php?GROUP=WEATHER&FORMAT=JSON" target="_blank" rel="noopener noreferrer">CelesTrak Weather OMM</a>.</p>
@@ -300,13 +304,13 @@
   </section>
 
   <footer>
-    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.4</span>
+    <span>NEXUS · GLOBAL EARTH INTELLIGENCE OBSERVATORY · BUILD 6.4.1</span>
     <span><a href="https://isc.sans.edu/" target="_blank" rel="noopener noreferrer">SANS ISC</a> · <a href="https://www.cisa.gov/" target="_blank" rel="noopener noreferrer">CISA</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · <a href="https://earthdata.nasa.gov/" target="_blank" rel="noopener noreferrer">NASA EOSDIS</a></span>
   </footer>
 </div>
 <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
 <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.144.0/Build/Cesium/";</script>
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.144.0/Build/Cesium/Cesium.js"></script>
-<script src="./app.js?v=22"></script>
+<script src="./app.js?v=23"></script>
 </body>
 </html>
