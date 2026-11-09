@@ -285,3 +285,26 @@ test("NEXUS 6.4 adds NASA GIBS satellite imagery to the 3D globe", () => {
   assert.match(readme, /NASA GIBS/);
   assert.match(readme, /últimos 14 días/);
 });
+
+
+test("NEXUS 6.4.1 keeps the Earth visible in Orbital mode without external tile services", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
+  const sw = fs.readFileSync(path.join(__dirname, "../sw.js"), "utf8");
+  const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
+  assert.match(html, /BUILD 6\.4\.1/);
+  assert.match(html, /id="orbitalHomeBtn"/);
+  assert.match(html, /id="orbitalSurfaceStatus"/);
+  assert.match(html, /release=6\.4\.1/);
+  assert.match(app, /Assets\/Textures\/NaturalEarthII/);
+  assert.match(app, /new Cesium\.GeographicTilingScheme/);
+  assert.match(app, /orbitalViewer\.scene\.globe\.baseColor/);
+  assert.match(app, /function resetOrbitalCamera/);
+  assert.match(app, /orbitalHomeBtn/);
+  assert.match(app, /detailProvider\.errorEvent\.addEventListener/);
+  assert.doesNotMatch(app, /orbitalViewer\.flyTo\(orbitalSatellites\.map/);
+  assert.match(css, /orbital-surface-status/);
+  assert.match(sw, /nexus-shell-v23/);
+  assert.match(readme, /textura Natural Earth II/);
+});
