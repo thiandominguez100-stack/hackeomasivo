@@ -1447,7 +1447,6 @@
       safeText(footRight, "IMÁGENES CON FECHA · NO VIDEO EN DIRECTO");
       if (mapReady) {
         setSatelliteFrame(satelliteFrameIndex, false);
-        renderSatelliteImagery();
       }
     } else {
       safeText(heading, "ORBITAL INTELLIGENCE · satélites civiles");
