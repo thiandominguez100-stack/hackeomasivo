@@ -131,7 +131,7 @@ test("NEXUS 6.1 retains the colored globe and explains orbital data limits", () 
   const app = fs.readFileSync(path.join(__dirname, "../app.js"), "utf8");
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
-  assert.match(html, /BUILD 6\.0/);
+  assert.match(html, /BUILD 6\.1/);
   assert.match(html, /release=6\.1/);
   assert.match(html, /Contexto orbital/);
   assert.match(html, /celestrak\.org\/NORAD\/documentation\/gp-data-formats\.php/);
@@ -150,7 +150,7 @@ test("NEXUS 6.1 exposes three modes and clearly labels the weather data limits",
   const css = fs.readFileSync(path.join(__dirname, "../styles.css"), "utf8");
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
 
-  assert.match(html, /BUILD 6\.0/);
+  assert.match(html, /BUILD 6\.1/);
   assert.match(html, /id="cyberModeBtn"/);
   assert.match(html, /id="weatherModeBtn"/);
   assert.match(html, /id="orbitalModeBtn"/);
