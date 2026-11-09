@@ -134,7 +134,7 @@ test("NEXUS 6.3 retains the 3D MapLibre globe and documents safe orbital scope",
   assert.match(html, /BUILD 6.3/);
   assert.match(html, /release=6.3/);
   assert.match(html, /Contexto orbital/);
-  assert.match(html, /cesiumjs\/releases\/1\.144/);
+  assert.match(html, /cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium/);
   assert.match(app, /styles\/liberty/);
   assert.match(app, /setSky/);
   assert.match(app, /atmosphere-blend/);
@@ -196,7 +196,7 @@ test("NEXUS orbital mode uses Cesium 3D and SGP4 for the public civil-weather wh
   const readme = fs.readFileSync(path.join(__dirname, "../README.md"), "utf8");
   assert.match(html, /id="orbitalScene"/);
   assert.match(html, /id="orbitalObjectList"/);
-  assert.match(html, /cesiumjs\/releases\/1\.144/);
+  assert.match(html, /cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium/);
   assert.match(html, /CESIUM_BASE_URL/);
   assert.match(app, /new Cesium\.Viewer/);
   assert.match(app, /GROUP=WEATHER&FORMAT=JSON/);
@@ -246,4 +246,14 @@ test("NEXUS 6.3 adds a 24-hour global weather forecast timeline", () => {
   assert.match(css, /weather-forecast-player/);
   assert.match(css, /orbital-visibility-toggles/);
   assert.match(readme, /siguientes 24 horas/);
+});
+
+
+test("NEXUS 6.3.1 loads Cesium and its worker modules from the same pinned CDN", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const sw = fs.readFileSync(path.join(__dirname, "../sw.js"), "utf8");
+  assert.match(html, /window\.CESIUM_BASE_URL = "https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\//);
+  assert.match(html, /<script src="https:\/\/cdn\.jsdelivr\.net\/npm\/cesium@1\.144\.0\/Build\/Cesium\/Cesium\.js"><\/script>/);
+  assert.match(html, /app\.js\?v=20/);
+  assert.match(sw, /nexus-shell-v20/);
 });
