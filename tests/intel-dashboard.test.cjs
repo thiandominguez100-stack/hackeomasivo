@@ -210,6 +210,8 @@ test("NEXUS orbital mode uses Cesium 3D and SGP4 for the public civil-weather wh
   assert.match(app, /localStorage\.setItem/);
   assert.match(app, /CIVIL_WEATHER_MISSION/);
   assert.match(app, /classification !== "U"/);
+  assert.match(app, /rows: safeRows/);
+  assert.doesNotMatch(app.match(/CIVIL_WEATHER_MISSION = (.*);/)?.[1] || "", /DMSP|EWS-G|FENGYUN/);
   assert.match(css, /orbital-scene/);
   assert.match(readme, /no procesa ni representa satélites militares/);
 });
