@@ -1,4 +1,4 @@
-# NEXUS 6.1 — Global Earth Intelligence
+# NEXUS 6.2 — Global Earth Intelligence
 
 NEXUS presenta inteligencia defensiva pública y estadísticas de sensores. No genera tráfico, rutas ni eventos ficticios y no contacta con sistemas observados.
 
@@ -41,33 +41,35 @@ No hace falta Firebase, servidor propio, claves API ni credenciales para estas f
 - El recolector mantiene `data/publications-history.json`: hasta 2.000 publicaciones oficiales, deduplicadas y con retención de 365 días. El explorador combina el archivo con el snapshot reciente y muestra hasta 100 resultados por consulta.
 - El archivo conserva solo título, fuente, tipo, fecha y enlace HTTPS oficial. Es un historial de publicaciones, no un registro exhaustivo de incidentes confirmados.
 
-## Planeta a color y contexto orbital
+## NEXUS 6.2: Cyber, Global Weather y Orbital
 
-- El globo usa el estilo Liberty de OpenFreeMap y el efecto de atmósfera de MapLibre para mostrar continentes, océanos y halo atmosférico con mayor contraste.
-- La sección orbital explica las limitaciones de los catálogos públicos y enlaza a la documentación oficial de CelesTrak.
-- CelesTrak recomienda espaciar las consultas GP aproximadamente cada dos horas. Los elementos orbitales son datos para calcular posiciones estimadas; no son una señal GPS ni una medición continua.
-- El catálogo público no equivale a todos los objetos que existen: algunos satélites pequeños pueden tardar en identificarse y otros pueden no quedar identificados.
-- NEXUS muestra contexto orbital agregado y no ofrece rastreo preciso, trayectorias ni identificación individual de satélites estratégicos.
-
-## NEXUS 6.0: Cyber, Global Weather y Orbital
+### Globo base
+- El modo Cyber conserva el globo MapLibre con proyección 3D, atmósfera, agregados de país y edificios opcionales.
+- Los cambios de modo redimensionan el motor visible y aíslan las capas para que una vista no tape a la otra.
 
 ### Global Weather
-- La vista global dibuja una malla de referencia de 24 coordenadas repartidas entre latitudes y longitudes. Los colores representan temperatura estimada por Open-Meteo; las flechas representan dirección del viento del modelo. Es una muestra visual, no una cuadrícula de observaciones de estaciones ni una medición homogénea de todo el planeta.
-- La malla se actualiza como máximo cada diez minutos desde el navegador y puede actualizarse manualmente. Cada punto conserva la hora de validez devuelta por el proveedor.
-- El modo meteorológico agrega un reproductor de cuadros de radar de precipitación de RainViewer. La API pública ofrece hasta dos horas de historial en intervalos de diez minutos; desde enero de 2026 no ofrece nowcast gratuito ni imágenes satelitales infrarrojas. La cobertura depende de los radares que cada proveedor local comparte y no es uniforme a escala planetaria.
-- La línea de tiempo anima únicamente los cuadros pasados disponibles. No muestra una predicción ni debe describirse como una imagen meteorológica global completa.
-- Al seleccionar un punto del mapa, NEXUS consulta Open-Meteo para temperatura, sensación térmica, viento, humedad, nubosidad y precipitación actuales según el modelo disponible. Son estimaciones de modelo con hora de referencia, no mediciones de estación en vivo.
-- NEXUS identifica la fuente y su hora, y conserva una degradación clara si un proveedor no está disponible. Se acredita a RainViewer y Open-Meteo en la interfaz. El endpoint gratuito de RainViewer está destinado a uso personal, educativo y comunitario de pequeña escala; no ofrece SLA.
+- El globo contiene una malla de hasta **288 celdas** de 15° de latitud/longitud, con muestras distribuidas por todo el planeta.
+- La interfaz permite colorear la superficie por temperatura, precipitación, viento, humedad, nubosidad o presión.
+- Cada celda conserva valores del modelo para temperatura, sensación térmica, humedad relativa, punto de rocío, nubosidad, precipitación, lluvia, nieve, presión, velocidad/dirección del viento y código meteorológico.
+- El navegador consulta Open-Meteo en una petición de múltiples ubicaciones; los datos se refrescan automáticamente cada 30 minutos y también se pueden solicitar manualmente.
+- Las celdas son estimaciones de modelo en una resolución visual de referencia de 15°, no observaciones de estaciones ni una simulación de alta resolución. Si una celda no tiene un dato válido, NEXUS no inventa su valor.
+- RainViewer se conserva como capa opcional de radar de precipitación histórica, solo en las regiones con cobertura de radar disponible y con hasta dos horas de historial. No es una capa de pronóstico ni una imagen meteorológica uniforme del planeta.
+- Al seleccionar un punto se muestran las variables meteorológicas devueltas por el modelo y su hora de referencia.
 
-### Orbital Intelligence
-- La vista orbital es de contexto agregado. Enlaza al resumen SATCAT y a la documentación de CelesTrak.
-- No dibuja posiciones orbitales exactas ni trayectorias de objetos individuales. Un catálogo público no es exhaustivo, no equivale a telemetría en vivo y puede tener registros sin elementos actuales.
-- CelesTrak solicita espaciar las consultas GP aproximadamente cada dos horas y las consultas SATCAT de resumen no deben tratarse como actualización segundo a segundo.
+### Orbital Intelligence 3D
+- El modo Orbital usa un visor CesiumJS independiente para renderizar una esfera terrestre 3D con marcadores y arcos orbitales a distintas alturas.
+- Los elementos orbitales OMM se consultan desde el grupo Weather de CelesTrak. La aplicación filtra una lista explícita de misiones civiles meteorológicas y de observación de la Tierra; no procesa ni representa satélites militares o estratégicos.
+- Satellite.js propaga los elementos OMM con SGP4. Las posiciones calculadas se actualizan en la escena cada cinco segundos; el catálogo orbital se vuelve a consultar como máximo cada dos horas.
+- La lista permite enfocar el globo en una misión y seleccionar su marcador para ver nombre, altitud estimada, inclinación, período y época OMM.
+- Esta selección no equivale a todos los satélites que existen. El catálogo público puede contener huecos, objetos retirados, elementos antiguos o clasificaciones incompletas. Los resultados son posiciones matemáticamente calculadas, no telemetría GPS ni una fuente de navegación operacional.
+- CelesTrak documenta OMM como formato compatible con números de catálogo ampliados; Satellite.js admite JSON OMM y propagación SGP4. NEXUS no usa TLE antiguo de cinco dígitos para estos objetos.
 
-### Arquitectura de datos meteorológicos
-- El mapa base usa MapLibre GL JS. RainViewer aporta los mosaicos históricos de radar; Open-Meteo aporta consultas puntuales.
-- No requiere Firebase, claves privadas ni un servidor propio para estas consultas de solo lectura.
-- La aplicación no interpola lluvia donde no hay radar ni inventa nubes, viento u observaciones para cubrir regiones sin datos.
+### Fuentes, límites y atribución
+- Meteorología: https://open-meteo.com/en/docs y https://www.rainviewer.com/api.html
+- Catálogo orbital: https://celestrak.org/NORAD/elements/gp.php?GROUP=WEATHER&FORMAT=JSON
+- Formato orbital OMM: https://celestrak.org/NORAD/documentation/gp-data-formats.php
+- Motor orbital: https://github.com/shashwatak/satellite-js
+- Globo 3D orbital: CesiumJS con teselas cartográficas de OpenStreetMap; se muestran los créditos del proveedor en el visor.
 
 ## Cómo interpretar los datos
 
