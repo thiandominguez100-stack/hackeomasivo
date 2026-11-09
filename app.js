@@ -48,8 +48,9 @@
   const RADAR_METADATA_URL = "https://api.rainviewer.com/public/weather-maps.json";
   const RADAR_REFRESH_MIN_MS = 5 * 60 * 1000;
   const WEATHER_CURRENT_FIELDS = [
-    "temperature_2m", "apparent_temperature", "relative_humidity_2m",
-    "cloud_cover", "precipitation", "wind_speed_10m", "wind_direction_10m"
+    "temperature_2m", "apparent_temperature", "relative_humidity_2m", "dew_point_2m",
+    "cloud_cover", "precipitation", "rain", "snowfall", "pressure_msl",
+    "wind_speed_10m", "wind_direction_10m", "weather_code"
   ].join(",");
   const WEATHER_GRID_COORDS = [];
   for (let latitude = -82.5; latitude <= 82.5; latitude += 15) {
@@ -777,6 +778,263 @@
       console.warn("NEXUS point weather:", error);
       safeText($("weatherPointUpdated"), "No se pudieron obtener datos para este punto. Probá otra ubicación.");
       ["wxTemp", "wxFeels", "wxWind", "wxHumidity", "wxCloud", "wxRain"].forEach((id) => safeText($(id), "—"));
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, (char) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+    }[char]));
+  }
+
+  async function getSatelliteLibrary() {
+    if (!satelliteModulePromise) {
+      satelliteModulePromise = import("https://cdn.jsdelivr.net/npm/satellite.js@7.1.0/+esm");
+    }
+    return satelliteModulePromise;
+  }
+
+  function initOrbitalViewer() {
+    if (orbitalViewer) {
+      window.setTimeout(() => orbitalViewer && orbitalViewer.resize(), 80);
+      return true;
+    }
+    if (!window.Cesium || !$("orbitalScene")) {
+      safeText($("orbitalStatus"), "No se pudo cargar CesiumJS. El globo orbital 3D no está disponible en este navegador.");
+      return false;
+    }
+    try {
+      const Cesium = window.Cesium;
+      orbitalViewer = new Cesium.Viewer("orbitalScene", {
+        baseLayer: false,
+        terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+        animation: false,
+        timeline: false,
+        sceneModePicker: false,
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: false,
+        navigationHelpButton: false,
+        fullscreenButton: false,
+        infoBox: true,
+        selectionIndicator: true,
+        scene3DOnly: true,
+        requestRenderMode: true,
+        maximumRenderTimeChange: Infinity,
+        shouldAnimate: false
+      });
+      orbitalViewer.imageryLayers.removeAll(true);
+      orbitalViewer.imageryLayers.addImageryProvider(new Cesium.UrlTemplateImageryProvider({
+        url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        maximumLevel: 18,
+        credit: "© OpenStreetMap contributors"
+      }));
+      orbitalViewer.scene.globe.enableLighting = true;
+      orbitalViewer.scene.globe.showGroundAtmosphere = true;
+      orbitalViewer.scene.screenSpaceCameraController.minimumZoomDistance = 720000;
+      orbitalViewer.scene.screenSpaceCameraController.maximumZoomDistance = 65000000;
+      orbitalViewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(-35, 18, 33000000),
+        orientation: { heading: 0, pitch: Cesium.Math.toRadians(-55), roll: 0 }
+      });
+      window.setTimeout(() => orbitalViewer && orbitalViewer.resize(), 120);
+      return true;
+    } catch (error) {
+      console.error("NEXUS Cesium viewer:", error);
+      safeText($("orbitalStatus"), "Error al iniciar el globo orbital 3D: " + (error.message || "error gráfico"));
+      orbitalViewer = null;
+      return false;
+    }
+  }
+
+  function satelliteGeodetic(satellite, satrec, date) {
+    const propagated = satellite.propagate(satrec, date);
+    if (!propagated || !propagated.position) return null;
+    const geodetic = satellite.eciToGeodetic(propagated.position, satellite.gstime(date));
+    if (!geodetic || !Number.isFinite(geodetic.latitude) ||
+        !Number.isFinite(geodetic.longitude) || !Number.isFinite(geodetic.height)) return null;
+    return geodetic;
+  }
+
+  function updateOrbitalPositions() {
+    if (!orbitalViewer || !window.Cesium || !orbitalSatellites.length) return;
+    const Cesium = window.Cesium;
+    const satellite = orbitalSatellites[0].library;
+    const now = new Date();
+    orbitalSatellites.forEach((item) => {
+      const geo = satelliteGeodetic(satellite, item.satrec, now);
+      if (!geo) return;
+      const altitudeKm = geo.height;
+      item.entity.position = Cesium.Cartesian3.fromRadians(geo.longitude, geo.latitude, altitudeKm * 1000);
+      item.entity.description =
+        "<div class='cesium-infoBox-defaultDescription'>" +
+        "<b>" + escapeHtml(item.name) + "</b><br>" +
+        "Altitud orbital estimada: " + altitudeKm.toFixed(1) + " km<br>" +
+        "Inclinación: " + Number(item.omm.INCLINATION).toFixed(2) + "°<br>" +
+        "Período: " + (item.periodMinutes).toFixed(1) + " min<br>" +
+        "Elementos OMM: " + escapeHtml(item.omm.EPOCH) + "<br>" +
+        "Fuente: CelesTrak · propagación matemática SGP4" +
+        "</div>";
+    });
+    orbitalViewer.scene.requestRender();
+  }
+
+  function drawOrbitalCatalog(rows, satellite) {
+    if (!orbitalViewer || !window.Cesium) return;
+    const Cesium = window.Cesium;
+    orbitalViewer.entities.removeAll();
+    orbitalSatellites = [];
+    const now = new Date();
+
+    rows.forEach((omm) => {
+      const name = String(omm.OBJECT_NAME || "").trim();
+      const epoch = new Date(String(omm.EPOCH || ""));
+      const classification = String(omm.CLASSIFICATION_TYPE || "U").toUpperCase();
+      if (!CIVIL_WEATHER_MISSION.test(name) || classification !== "U" ||
+          !Number.isFinite(epoch.getTime()) ||
+          Math.abs(now.getTime() - epoch.getTime()) > 14 * 24 * 60 * 60 * 1000) return;
+
+      try {
+        const satrec = satellite.json2satrec(omm);
+        const initial = satelliteGeodetic(satellite, satrec, now);
+        if (!initial || initial.height < 100 || initial.height > 50000) return;
+        const meanMotion = Number(omm.MEAN_MOTION);
+        const periodMinutes = Number.isFinite(meanMotion) && meanMotion > 0 ? 1440 / meanMotion : 100;
+        const orbitPositions = [];
+        const periodMs = periodMinutes * 60 * 1000;
+        for (let step = 0; step <= 72; step += 1) {
+          const future = new Date(now.getTime() + periodMs * step / 72);
+          const geo = satelliteGeodetic(satellite, satrec, future);
+          if (!geo) continue;
+          orbitPositions.push(Cesium.Cartesian3.fromRadians(geo.longitude, geo.latitude, geo.height * 1000));
+        }
+        if (orbitPositions.length < 20) return;
+
+        const color = /^(GOES|METEOSAT|HIMAWARI|INSAT|GEO-KOMPSAT|ELEKTRO-L|MTG)/i.test(name)
+          ? Cesium.Color.fromCssColorString("#ffcb70")
+          : Cesium.Color.fromCssColorString("#69dff0");
+        const entity = orbitalViewer.entities.add({
+          id: "nexus-civil-weather-" + String(omm.NORAD_CAT_ID || name),
+          name,
+          position: Cesium.Cartesian3.fromRadians(initial.longitude, initial.latitude, initial.height * 1000),
+          point: {
+            pixelSize: 10,
+            color,
+            outlineColor: Cesium.Color.WHITE,
+            outlineWidth: 1.5,
+            scaleByDistance: new Cesium.NearFarScalar(700000, 1.45, 36000000, 0.72),
+            disableDepthTestDistance: 0
+          },
+          label: {
+            text: name,
+            font: "10px sans-serif",
+            fillColor: color,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new Cesium.Cartesian2(0, -15),
+            scaleByDistance: new Cesium.NearFarScalar(900000, 1, 32000000, 0.55),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 42000000)
+          },
+          polyline: {
+            positions: orbitPositions,
+            width: 1.3,
+            material: color.withAlpha(0.46),
+            arcType: Cesium.ArcType.NONE
+          }
+        });
+        orbitalSatellites.push({
+          name,
+          omm,
+          satrec,
+          entity,
+          periodMinutes,
+          library: satellite
+        });
+      } catch (error) {
+        console.warn("NEXUS skipped OMM object:", name, error);
+      }
+    });
+
+    safeText($("orbitalCount"), orbitalSatellites.length);
+    const list = $("orbitalObjectList");
+    list.replaceChildren();
+    if (!orbitalSatellites.length) {
+      addText(list, "span", "empty-state", "CelesTrak respondió, pero no hubo satélites civiles elegibles con elementos recientes.");
+    } else {
+      orbitalSatellites
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((item) => {
+          const button = addText(list, "button", "orbital-object-item", item.name);
+          button.type = "button";
+          addText(button, "small", "", "NORAD " + String(item.omm.NORAD_CAT_ID || "—") + " · " +
+            (Number(item.omm.MEAN_MOTION) > 1 ? "órbita baja" : "órbita alta"));
+          button.addEventListener("click", () => {
+            if (orbitalViewer) orbitalViewer.flyTo(item.entity, {
+              duration: 1.4,
+              offset: new Cesium.HeadingPitchRange(0, Cesium.Math.toRadians(-32), 1800000)
+            });
+          });
+        });
+    }
+    updateOrbitalPositions();
+    if (orbitalTickHandle) window.clearInterval(orbitalTickHandle);
+    orbitalTickHandle = window.setInterval(updateOrbitalPositions, 5000);
+    if (orbitalSatellites.length) {
+      orbitalViewer.flyTo(orbitalSatellites.map((item) => item.entity), { duration: 1.6 }).catch(() => {});
+    }
+  }
+
+  async function loadOrbitalCatalog(force = false) {
+    if (orbitalLoading) return;
+    if (!force && orbitalSatellites.length && Date.now() - orbitalFetchedAt < ORBITAL_REFRESH_MS) {
+      safeText($("orbitalStatus"), orbitalSatellites.length + " satélites civiles meteorológicos · posiciones recalculadas cada 5 s · elementos OMM " +
+        ageLabel(new Date(orbitalFetchedAt).toISOString()) + ".");
+      updateOrbitalPositions();
+      return;
+    }
+    if (!initOrbitalViewer()) return;
+
+    orbitalLoading = true;
+    const button = $("loadOrbitalBtn");
+    if (button) {
+      button.disabled = true;
+      safeText(button, "CONSULTANDO…");
+    }
+    safeText($("orbitalStatus"), "Consultando CelesTrak · catálogo meteorológico OMM…");
+
+    try {
+      const [satellite, response] = await Promise.all([
+        getSatelliteLibrary(),
+        fetch(ORBITAL_GROUP_URL, {
+          method: "GET",
+          cache: "no-store",
+          headers: { "Accept": "application/json" }
+        })
+      ]);
+      if (!response.ok) throw new Error("CelesTrak respondió " + response.status);
+      const payload = await response.json();
+      const rows = Array.isArray(payload) ? payload : [payload];
+      if (!rows.length) throw new Error("El catálogo no devolvió registros OMM.");
+      drawOrbitalCatalog(rows, satellite);
+      orbitalFetchedAt = Date.now();
+      safeText($("orbitalUpdated"), dateLabel(new Date(orbitalFetchedAt).toISOString()));
+      safeText($("orbitalStatus"), orbitalSatellites.length + " satélites civiles elegibles · posiciones SGP4 actualizadas cada 5 s · elementos orbitales refrescados cada 2 h.");
+      if (!orbitalSatellites.length) {
+        safeText($("orbitalStatus"), "El feed respondió, pero no contiene objetos civiles elegibles con elementos recientes. No se dibujaron posiciones de otros tipos.");
+      }
+    } catch (error) {
+      console.error("NEXUS orbital data:", error);
+      safeText($("orbitalStatus"), "No se pudieron cargar los satélites: " + (error.message || "error de red") +
+        ". Verificá conexión o reintentá más tarde.");
+      safeText($("orbitalPropagation"), "Sin datos");
+    } finally {
+      orbitalLoading = false;
+      if (button) {
+        button.disabled = false;
+        safeText(button, "ACTUALIZAR CATÁLOGO");
+      }
     }
   }
 
